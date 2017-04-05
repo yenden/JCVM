@@ -162,6 +162,26 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, maxSta
 			dupX(currentFrame) //todo
 		case 0x42:
 			iadd(currentFrame)
+		case 0x44:
+			isub(currentFrame)
+		case 0x46:
+			imul(currentFrame)
+		case 0x48:
+			idiv(currentFrame)
+		case 0x4a:
+			irem(currentFrame)
+		case 0x4E:
+			ishl(currentFrame)
+		case 0x52:
+			iushr(currentFrame)
+		case 0x54:
+			iand(currentFrame)
+		case 0x56:
+			ior(currentFrame)
+		case 0x58:
+			ixor(currentFrame)
+		case 0x5D:
+			i2b(currentFrame)
 		}
 
 	}

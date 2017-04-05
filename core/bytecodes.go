@@ -18,7 +18,7 @@ func aload(currF *Frame, index uint8) {
 }
 func iload(currF *Frame, index uint8) {
 	val := currF.localvariables[index]
-	currF.push(val)
+	currF.push(val.(int32))
 }
 func aaload(currF *Frame) {
 	index := currF.pop()
@@ -131,6 +131,68 @@ func dupX(currF *Frame) {
 func iadd(currF *Frame) {
 	value1 := currF.pop()
 	value2 := currF.pop()
-	result := value1.(int16) + value2.(int16)
+	result := value1.(int32) + value2.(int32)
+	currF.push(result)
+}
+func isub(currF *Frame) {
+	value2 := currF.pop()
+	value1 := currF.pop()
+	result := value1.(int32) - value2.(int32)
+	currF.push(result)
+}
+func imul(currF *Frame) {
+	value1 := currF.pop()
+	value2 := currF.pop()
+	result := value1.(int32) * value2.(int32)
+	currF.push(result)
+}
+func idiv(currF *Frame) {
+	value2 := currF.pop()
+	value1 := currF.pop()
+	result := value1.(int32) / value2.(int32)
+	currF.push(result)
+}
+func irem(currF *Frame) {
+	value2 := currF.pop()
+	value1 := currF.pop()
+	result := value1.(int32) - (value1.(int32)/value2.(int32))*value2.(int32)
+	currF.push(result)
+}
+func ishl(currF *Frame) {
+	value2 := currF.pop()
+	value1 := currF.pop()
+	s := uint(value2.(int32) & 0x0000001F)
+	result := value1.(int32) << s
+	currF.push(result)
+}
+func iushr(currF *Frame) {
+	value2 := currF.pop()
+	value1 := currF.pop()
+	s := uint(value2.(int32) & 0x0000001F)
+	result := value1.(int32) >> s
+	currF.push(result)
+}
+func iand(currF *Frame) {
+	value1 := currF.pop()
+	value2 := currF.pop()
+	result := value1.(int32) & value2.(int32)
+	currF.push(result)
+}
+func ior(currF *Frame) {
+	value1 := currF.pop()
+	value2 := currF.pop()
+	result := value1.(int32) | value2.(int32)
+	currF.push(result)
+}
+func ixor(currF *Frame) {
+	value1 := currF.pop()
+	value2 := currF.pop()
+	result := value1.(int32) ^ value2.(int32)
+	currF.push(result)
+}
+func i2b(currF *Frame) {
+	value := currF.pop()
+	interm := int16(value.(int32) & 0x0000FFFF)
+	result := int16(int8(interm))
 	currF.push(result)
 }
