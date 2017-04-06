@@ -64,8 +64,11 @@ func (vm *VM) popFrame() *Frame {
 
 func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, maxStack uint8, params uint8, maxLocals uint8) {
 	currentFrame := vm.stackFrame[vm.frameTop]
-	for i := params; i > 0; i-- {
-		currentFrame.localvariables[i-1] = 0
+	if vm.frameTop >= 1 {
+		invokerFrame := vm.stackFrame[vm.frameTop-1]
+		for i := params; i > 0; i-- {
+			currentFrame.localvariables[i-1] = invokerFrame.pop()
+		}
 	}
 
 	for {
@@ -182,6 +185,52 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, maxSta
 			ixor(currentFrame)
 		case 0x5D:
 			i2b(currentFrame)
+		case 0x5E:
+			i2s(currentFrame)
+		case 0x60:
+			bValue := int8(readU1(pByteCode, pPC))
+			ifeq(currentFrame, bValue, pPC)
+		case 0x61:
+			bValue := int8(readU1(pByteCode, pPC))
+			ifne(currentFrame, bValue, pPC)
+		case 0x62:
+			bValue := int8(readU1(pByteCode, pPC))
+			iflt(currentFrame, bValue, pPC)
+		case 0x63:
+			bValue := int8(readU1(pByteCode, pPC))
+			ifge(currentFrame, bValue, pPC)
+		case 0x64:
+			bValue := int8(readU1(pByteCode, pPC))
+			ifgt(currentFrame, bValue, pPC)
+		case 0x65:
+			bValue := int8(readU1(pByteCode, pPC))
+			ifle(currentFrame, bValue, pPC)
+		case 0x66:
+			bValue := int8(readU1(pByteCode, pPC))
+			ifnull(currentFrame, bValue, pPC)
+		case 0x67:
+			bValue := int8(readU1(pByteCode, pPC))
+			ifnnnull(currentFrame, bValue, pPC)
+		case 0x70:
+			bValue := int8(readU1(pByteCode, pPC))
+			goTo(currentFrame, bValue, pPC)
+		case 0x77:
+			invokerFrame := vm.stackFrame[vm.frameTop-1]
+			areturn(currentFrame, invokerFrame)
+			vm.frameTop--
+			return
+		case 0x79:
+			invokerFrame := vm.stackFrame[vm.frameTop-1]
+			ireturn(currentFrame, invokerFrame)
+			vm.frameTop--
+			return
+		case 0x7A:
+			vm.frameTop--
+			return
+		case 0x8B:
+			index := readU2(pByteCode, pPC)
+			invokevirtual(currentFrame, index, pCA, vm)
+		case 0x8C:
 		}
 
 	}
