@@ -17,10 +17,20 @@ type AbstractApplet struct {
 	PExport      *ExportComponent
 }
 
-/*
 func (abs *AbstractApplet) isThisLibrary(pPI *PackageInfo) bool {
-	return (*(abs.pHeader.pThisPackage) == *pPI)
-}*/
+	minV := abs.PHeader.pThisPackage.MinorVersion
+	majV := abs.PHeader.pThisPackage.MajorVersion
+	aidL := abs.PHeader.pThisPackage.AIDLength
+	if minV == pPI.MinorVersion && majV == pPI.MajorVersion && aidL == pPI.AIDLength {
+		for i := 0; i < int(aidL); i++ {
+			if abs.PHeader.pThisPackage.AID[i] != pPI.AID[i] {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
 
 type CardApplet struct {
 	AbsA    *AbstractApplet
@@ -39,16 +49,16 @@ func (cl *CardApplet) cloneLibrary() *AbstractApplet {
 		cl.AbsA.PDescriptor,
 		cl.AbsA.PExport,
 	}
-	/*cl.absA.pHeader = nil
-	cl.absA.pDir = nil
-	cl.absA.pClass = nil
-	cl.absA.pConstPool = nil
-	cl.absA.pDescriptor = nil
-	cl.absA.pImport = nil
-	cl.absA.pMethod = nil
-	cl.absA.pRefLoc = nil
-	cl.absA.pStaticField = nil
-	cl.absA.pExport = nil*/
+	cl.AbsA.PHeader = nil
+	cl.AbsA.PDir = nil
+	cl.AbsA.PClass = nil
+	cl.AbsA.PConstPool = nil
+	cl.AbsA.PDescriptor = nil
+	cl.AbsA.PImport = nil
+	cl.AbsA.PMethod = nil
+	cl.AbsA.PRefLoc = nil
+	cl.AbsA.PStaticField = nil
+	cl.AbsA.PExport = nil
 
 	return pcl
 }
