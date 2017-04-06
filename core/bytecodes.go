@@ -1,5 +1,9 @@
 package core
 
+import (
+	"fmt"
+)
+
 func aconstNull(currF *Frame) {
 	currF.push(NullType(0))
 }
@@ -195,4 +199,117 @@ func i2b(currF *Frame) {
 	interm := int16(value.(int32) & 0x0000FFFF)
 	result := int16(int8(interm))
 	currF.push(result)
+}
+func i2s(currF *Frame) {
+	value := currF.pop()
+	interm := int16(value.(int32) & 0x0000FFFF)
+	currF.push(interm)
+}
+func ifeq(currF *Frame, branch int8, pPC *int) {
+	value := currF.pop()
+	if value.(int16) == 0 {
+		(*pPC) += int(branch)
+		(*pPC) -= 2
+	}
+}
+func ifne(currF *Frame, branch int8, pPC *int) {
+	value := currF.pop()
+	if value.(int16) != 0 {
+		(*pPC) += int(branch)
+		(*pPC) -= 2
+	}
+}
+func iflt(currF *Frame, branch int8, pPC *int) {
+	value := currF.pop()
+	if value.(int16) < 0 {
+		(*pPC) += int(branch)
+		(*pPC) -= 2
+	}
+}
+func ifge(currF *Frame, branch int8, pPC *int) {
+	value := currF.pop()
+	if value.(int16) >= 0 {
+		(*pPC) += int(branch)
+		(*pPC) -= 2
+	}
+}
+func ifgt(currF *Frame, branch int8, pPC *int) {
+	value := currF.pop()
+	if value.(int16) > 0 {
+		(*pPC) += int(branch)
+		(*pPC) -= 2
+	}
+}
+func ifle(currF *Frame, branch int8, pPC *int) {
+	value := currF.pop()
+	if value.(int16) <= 0 {
+		(*pPC) += int(branch)
+		(*pPC) -= 2
+	}
+}
+
+func ifnull(currF *Frame, branch int8, pPC *int) {
+	value := currF.pop()
+	if value.(NullType) == NullType(0) {
+		(*pPC) += int(branch)
+		(*pPC) -= 2
+	}
+}
+
+func ifnnnull(currF *Frame, branch int8, pPC *int) {
+	value := currF.pop()
+	if value.(Reference) != Reference(NullType(0)) {
+		(*pPC) += int(branch)
+		(*pPC) -= 2
+	}
+}
+func goTo(currF *Frame, branch int8, pPC *int) {
+	(*pPC) += int(branch)
+	(*pPC) -= 2
+}
+func areturn(currF *Frame, invokerF *Frame) {
+	objref := currF.pop()
+	invokerF.push(objref.(Reference))
+}
+func ireturn(currF *Frame, invokerF *Frame) {
+	objref := currF.pop()
+	invokerF.push(objref.(int32))
+}
+func invokevirtual(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
+	pCI := pCA.PConstPool.pConstantPool[index]
+	if pCI.tag == 3 { //virtual method reference
+		byte1 := pCI.info[0]
+		if byte1&0x80 == 0x80 {
+			packageIndex := byte1 & 0x7F
+			pPI := pCA.PImport.packages[packageIndex]
+			pCL := findLibrary(pPI)
+			if pCL != nil {
+				//External library
+				classtoken := pCI.info[1]
+				sOffset := pCL.AbsA.PExport.pClassExport[classtoken].classOffset
+				pcLInf := pCL.AbsA.PClass.pClasses[sOffset]
+				token := pCI.info[2]
+				index2 := token - pcLInf.publicMethodTableBase
+				newFrame := &Frame{}
+				vm.pushFrame(newFrame)
+				pCL.AbsA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCL.AbsA, vm)
+			} else {
+				fmt.Println("Error: cannot invoke virtual package not found")
+			}
+
+		} else { //Interal class library
+			offset := makeU2(pCI.info[0], pCI.info[1])
+			token := pCI.info[2]
+			pcLInf := pCA.PClass.pClasses[offset]
+			newFrame := &Frame{}
+			vm.pushFrame(newFrame)
+			if token&0x80 == 0x80 {
+				index2 := token - pcLInf.packageMethodTableBase
+				pCA.PMethod.executeByteCode(pcLInf.packageVirtualMethodTable[index2], pCA, vm)
+			} else {
+				index2 := token - pcLInf.publicMethodTableBase
+				pCA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCA, vm)
+			}
+		}
+	}
 }
