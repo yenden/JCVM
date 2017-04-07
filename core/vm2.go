@@ -7,15 +7,15 @@ const (
 )
 
 type ReturnAddress int
-type Reference int16
+type Reference uint16
 type NullType int
 type Frame struct {
-	localvariables [maxlocals]interface{}
-	operandStack   [maxOpStack]interface{}
+	localvariables []interface{}
+	operandStack   []interface{}
 	opStackTop     int
 }
 type VM struct {
-	stackFrame [maxFrame]*Frame
+	stackFrame []*Frame //creer apres maxframe
 	frameTop   int
 }
 
@@ -47,6 +47,8 @@ func (frame *Frame) pop() interface{} {
 		return 0
 	}
 	val := frame.operandStack[frame.opStackTop]
+	i := frame.opStackTop
+	frame.operandStack = append(frame.operandStack[:i], frame.operandStack[i+1:]...)
 	frame.opStackTop--
 	return val
 
@@ -57,20 +59,15 @@ func (vm *VM) popFrame() *Frame {
 		return nil
 	}
 	fr := vm.stackFrame[vm.frameTop]
+	i := vm.frameTop
+	vm.stackFrame = append(vm.stackFrame[:i], vm.stackFrame[i+1:]...)
 	vm.frameTop--
 	return fr
 
 }
 
-func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, maxStack uint8, params uint8, maxLocals uint8) {
+func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params uint8) {
 	currentFrame := vm.stackFrame[vm.frameTop]
-	if vm.frameTop >= 1 {
-		invokerFrame := vm.stackFrame[vm.frameTop-1]
-		for i := params; i > 0; i-- {
-			currentFrame.localvariables[i-1] = invokerFrame.pop()
-		}
-	}
-
 	for {
 		bytecode := int(readU1(pByteCode, pPC))
 		switch bytecode {
@@ -231,6 +228,16 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, maxSta
 			index := readU2(pByteCode, pPC)
 			invokevirtual(currentFrame, index, pCA, vm)
 		case 0x8C:
+			index := readU2(pByteCode, pPC)
+			invokespecial(currentFrame, index, pCA, vm)
+		case 0x8D:
+			index := readU2(pByteCode, pPC)
+			invokestatic(currentFrame, index, pCA, vm)
+		case 0x8E:
+			nargs := readU1(pByteCode, pPC)
+			index := readU2(pByteCode, pPC)
+			methodToken := readU1(pByteCode, pPC)
+			invokeinterface(currentFrame, pCA, vm, nargs, index, methodToken)
 		}
 
 	}

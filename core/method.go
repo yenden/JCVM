@@ -32,20 +32,50 @@ func isAbstract(flag uint8) bool {
 	return (flag & 0x40) == 0x40
 }
 
-func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet, vm *VM) {
+func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet, vm *VM, Invokercond bool) {
+	iPosm2 := int(offset)
+	flags := readU1(mComp.pMethodInfo, &iPosm2)
+	currFrame := vm.stackFrame[vm.frameTop]
+	var maxStack, nargs, maxLocals uint8
+	if isExtended(flags) {
+		maxStack = readU1(mComp.pMethodInfo, &iPosm2)
+		nargs = readU1(mComp.pMethodInfo, &iPosm2)
+		maxLocals = readU1(mComp.pMethodInfo, &iPosm2)
+	} else {
+		//if abstract
+		maxStack = readLow(flags)
+		bitField := readU1(mComp.pMethodInfo, &iPosm2)
+		nargs = readHighShift(bitField)
+		maxLocals = readLow(bitField)
+	}
+	currFrame.opStackTop = -1
+	currFrame.localvariables = make([]interface{}, maxLocals)
+	currFrame.operandStack = make([]interface{}, maxStack)
+	if Invokercond == true {
+		invokerframe := vm.stackFrame[vm.frameTop-1]
+		for i := nargs; i > 0; i-- {
+			currFrame.localvariables[i-1] = invokerframe.pop()
+		}
+	}
+	vm.runStatic(mComp.pMethodInfo, &iPosm2, pCA, nargs)
 
+}
+
+/*
+func (mComp *MethodComponent) decodeMethod(offset uint16, pCA *AbstractApplet) (uint8, uint8, uint8, int) {
 	iPosm2 := int(offset)
 	flags := readU1(mComp.pMethodInfo, &iPosm2)
 	if isExtended(flags) {
 		maxStack := readU1(mComp.pMethodInfo, &iPosm2)
 		nargs := readU1(mComp.pMethodInfo, &iPosm2)
 		maxLocals := readU1(mComp.pMethodInfo, &iPosm2)
-		vm.runStatic(mComp.pMethodInfo, &iPosm2, pCA, maxStack, nargs, maxLocals)
-	} else {
-		maxStack := readLow(flags)
-		bitField := readU1(mComp.pMethodInfo, &iPosm2)
-		nargs := readHighShift(bitField)
-		maxLocals := readLow(bitField)
-		vm.runStatic(mComp.pMethodInfo, &iPosm2, pCA, maxStack, nargs, maxLocals)
+		return maxStack, nargs, maxLocals, iPosm2
 	}
-}
+	//if not extended
+	maxStack := readLow(flags)
+	bitField := readU1(mComp.pMethodInfo, &iPosm2)
+	nargs := readHighShift(bitField)
+	maxLocals := readLow(bitField)
+	return maxStack, nargs, maxLocals, iPosm2
+
+}*/
