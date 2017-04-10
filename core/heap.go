@@ -24,23 +24,29 @@ TypeArrayOfReference = 0x000E*/
 
 var (
 	javaClassArray [256]*JavaClass
-	jcCount        = -1
+	jcCount        = 0
 	heap           = make(map[Reference]interface{})
+	arrcount       = 511
+	interfcount    = 255
 	//heap           = make(map[int16]*ArrayValue)
 	//heapClass      = make(map[int16]*JavaClass)
 )
 
 type ArrayValue struct {
 	componentType typeValue
-	length        uint8
+	length        uint16
 	array         []interface{}
 }
 type JavaClass struct {
 	classref             uint16
 	superclassref        uint16
 	declaredinstancesize uint8
-	fields               []uint16
+	fields               []*instanceField
 	fieldInit            []bool
+}
+type instanceField struct {
+	token uint8
+	value interface{}
 }
 
 /*

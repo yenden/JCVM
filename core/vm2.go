@@ -196,7 +196,8 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x3E:
 			dup2(currentFrame)
 		case 0x3F:
-			dupX(currentFrame) //todo
+			mn := readU1(pByteCode, pPC)
+			dupX(currentFrame, mn)
 		case 0x41:
 			sadd(currentFrame)
 		case 0x42:
@@ -285,6 +286,12 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			index := readU2(pByteCode, pPC)
 			methodToken := readU1(pByteCode, pPC)
 			invokeinterface(currentFrame, pCA, vm, nargs, index, methodToken)
+		case 0x8F:
+			index := readU2(pByteCode, pPC)
+			vmNew(currentFrame, index, pCA)
+		case 0x90:
+			atype := readU1(pByteCode, pPC)
+			newArray(currentFrame, atype)
 		}
 
 	}

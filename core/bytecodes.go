@@ -147,8 +147,39 @@ func dup2(currF *Frame) {
 	currF.push(interm1.(int16))
 
 }
-func dupX(currF *Frame) {
-	//todo
+func dupX(currF *Frame, mn uint8) {
+	m := readHighShift(mn)
+	n := readLow(mn)
+	if n == 0 {
+		interm := make([]interface{}, m)
+		for i := 0; i < int(m); i++ {
+			switch a := currF.operandStack[currF.opStackTop-i].(type) {
+			case int32:
+				interm[i] = a
+			case int16:
+				interm[i] = a
+			}
+		}
+		for i := m; i > 0; i++ {
+			currF.push(interm[i])
+		}
+	} else {
+		interm := make([]interface{}, n)
+		for i := 0; i < int(n); i++ {
+			switch a := currF.pop().(type) {
+			case int32:
+				interm[i] = a
+			case int16:
+				interm[i] = a
+			}
+		}
+		for i := m; i > 0; i++ {
+			currF.push(interm[i])
+		}
+		for i := n; i > 0; i++ {
+			currF.push(interm[i])
+		}
+	}
 }
 func iadd(currF *Frame) {
 	value1 := currF.pop()
@@ -455,7 +486,129 @@ func invokeinterface(currF *Frame, pCA *AbstractApplet, vm *VM, nargs uint8, ind
 	}
 }
 
-//new bytecode :todo
+func vmNew(currF *Frame, index uint16, pCA *AbstractApplet) {
+	pCI := pCA.PConstPool.pConstantPool[index]
+	byte1 := pCI.info[0]
+	var class *JavaClass
+	if byte1&0x80 == 0x80 {
+		packageIndex := byte1 & 0x7F
+		pPI := pCA.PImport.packages[packageIndex]
+		pCL := findLibrary(pPI)
+		if pCL != nil {
+			//External library
+			classtoken := pCI.info[1]
+			sOffset := pCL.AbsA.PExport.pClassExport[classtoken].classOffset
+			class = createClassInstance(classtoken, sOffset, pCL.AbsA)
+		} else {
+			fmt.Println("Error: cannot create class package not found")
+		}
+	} else {
+		offset := makeU2(pCI.info[0], pCI.info[1])
+		token := pCI.info[2]
+		//	pcLInf := pCA.PClass.pClasses[offset]
+		class = createClassInstance(token, offset, pCA)
+	}
+
+	heap[Reference(jcCount+1)] = class
+	currF.push(Reference(jcCount + 1)) //arbritrary number
+}
+func createClassInstance(classtoken uint8, soffset uint16, pCL *AbstractApplet) *JavaClass {
+	javaClass := &JavaClass{}
+	javaClass.superclassref = pCL.PClass.pClasses[soffset].superClassRef
+	javaClass.declaredinstancesize = pCL.PClass.pClasses[soffset].declaredInstanceSize
+	var classInf *ClassDescriptorInfo
+	for i := 0; i < int(pCL.PDescriptor.classCount); i++ {
+		if pCL.PDescriptor.classes[i].token == classtoken {
+			javaClass.classref = pCL.PDescriptor.classes[i].thisClassRef
+			classInf = pCL.PDescriptor.classes[i]
+			break
+		}
+	}
+	setInstanceFieldDefaultValue(classInf, javaClass)
+	return javaClass
+}
+func setInstanceFieldDefaultValue(classInf *ClassDescriptorInfo, javaClass *JavaClass) {
+	javaClass.fields = make([]*instanceField, classInf.fieldCount)
+	for i := 0; i < int(classInf.fieldCount); i++ {
+		if classInf.fields[i].pAF&AccStatic != AccStatic {
+			switch classInf.fields[i].pFieldtype {
+			case 0x1002:
+				//bool
+				javaClass.fields[i].token = classInf.fields[i].token
+				javaClass.fields[i].value = int16(0)
+			case 0x1003:
+				//byte
+				javaClass.fields[i].token = classInf.fields[i].token
+				javaClass.fields[i].value = int16(0)
+
+			case 0x1004:
+				//short
+				javaClass.fields[i].token = classInf.fields[i].token
+				javaClass.fields[i].value = int16(0)
+
+			case 0x1005:
+				//int
+				javaClass.fields[i].token = classInf.fields[i].token
+				javaClass.fields[i].value = int32(0)
+			default:
+				//reference type
+				javaClass.fields[i].token = classInf.fields[i].token
+				javaClass.fields[i].value = Reference(0)
+			}
+		}
+	}
+}
+func newArray(currF *Frame, atype uint8) {
+	count := currF.pop().(int16)
+	array := &ArrayValue{}
+	switch atype {
+	case 10:
+		//boolean
+		array.componentType = TypeBoolean
+		array.length = uint16(count)
+		array.array = make([]interface{}, count)
+		for i := range array.array {
+			array.array[i] = uint8(0)
+		}
+	case 11:
+		//byte
+		array.componentType = TypeByte
+		array.length = uint16(count)
+		array.array = make([]interface{}, count)
+		for i := range array.array {
+			array.array[i] = uint8(0)
+		}
+	case 12:
+		//short
+		array.componentType = TypeShort
+		array.length = uint16(count)
+		array.array = make([]interface{}, count)
+		for i := range array.array {
+			array.array[i] = int16(0)
+		}
+	case 13:
+		//int
+		array.componentType = TypeInt
+		array.length = uint16(count)
+		array.array = make([]interface{}, count)
+		for i := range array.array {
+			array.array[i] = int32(0)
+		}
+	}
+	heap[Reference(arrcount+1)] = array
+	currF.push(Reference(arrcount + 1))
+}
+func anewArray(currF *Frame, index uint16, pCA *AbstractApplet) {
+	pCI := pCA.PConstPool.pConstantPool[index]
+	byte1 := pCI.info[0]
+	//var class *JavaClass
+	if byte1&0x80 == 0x80 {
+		//trouver si c'est interface  ou class ensuite creer sur heap
+	} else {
+		//trouver si c'est interface  ou class ensuite creer sur heap
+	}
+
+}
 
 /*
 *****Byte code verification for later*****
