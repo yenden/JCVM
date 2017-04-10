@@ -63,16 +63,17 @@ func (cl *CardApplet) cloneLibrary() *AbstractApplet {
 	return pcl
 }
 
-func (cl *CardApplet) install() {
+func (cl *CardApplet) Install(vm *VM) {
 	fmt.Println("Start installing...")
 	if cl.PApplet == nil {
 		fmt.Println("Not an applet!")
 		return
 	}
-	fmt.Printf("Install command from %d", int(cl.PApplet.applets[0].installMethodOffset))
-	//cl.AbsA.PMethod.executeByteCode(uint16(cl.PApplet.applets[0].installMethodOffset), cl.AbsA)
+	fmt.Printf("Install command from %d\r\n", int(cl.PApplet.applets[0].installMethodOffset))
+	offset := uint16(cl.PApplet.applets[0].installMethodOffset)
+	cl.AbsA.PMethod.executeByteCode(offset, cl.AbsA, vm, false)
 	fmt.Println("Install finished!")
 }
 
-func (cl *CardApplet) process() {
+func (cl *CardApplet) Process() {
 }

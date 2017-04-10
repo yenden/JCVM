@@ -15,8 +15,8 @@ type Frame struct {
 	opStackTop     int
 }
 type VM struct {
-	stackFrame []*Frame //creer apres maxframe
-	frameTop   int
+	StackFrame []*Frame //creer apres maxframe
+	FrameTop   int
 }
 
 /****Push functions****/
@@ -31,12 +31,12 @@ func (frame *Frame) push(value interface{}) bool {
 
 }
 
-func (vm *VM) pushFrame(frame *Frame) bool {
-	if vm.frameTop+1 == maxFrame {
+func (vm *VM) PushFrame(frame *Frame) bool {
+	if vm.FrameTop+1 == maxFrame {
 		return false
 	}
-	vm.frameTop++
-	vm.stackFrame[vm.frameTop] = frame
+	vm.FrameTop++
+	vm.StackFrame[vm.FrameTop] = frame
 	return true
 
 }
@@ -55,19 +55,19 @@ func (frame *Frame) pop() interface{} {
 }
 
 func (vm *VM) popFrame() *Frame {
-	if vm.frameTop == -1 {
+	if vm.FrameTop == -1 {
 		return nil
 	}
-	fr := vm.stackFrame[vm.frameTop]
-	i := vm.frameTop
-	vm.stackFrame = append(vm.stackFrame[:i], vm.stackFrame[i+1:]...)
-	vm.frameTop--
+	fr := vm.StackFrame[vm.FrameTop]
+	i := vm.FrameTop
+	vm.StackFrame = append(vm.StackFrame[:i], vm.StackFrame[i+1:]...)
+	vm.FrameTop--
 	return fr
 
 }
 
 func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params uint8) {
-	currentFrame := vm.stackFrame[vm.frameTop]
+	currentFrame := vm.StackFrame[vm.FrameTop]
 	for {
 		bytecode := int(readU1(pByteCode, pPC))
 		switch bytecode {
@@ -76,6 +76,20 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x01:
 			//aconstnull
 			aconstNull(currentFrame)
+		case 0x02:
+			sconst(currentFrame, -1)
+		case 0x03:
+			sconst(currentFrame, 0)
+		case 0x04:
+			sconst(currentFrame, 1)
+		case 0x05:
+			sconst(currentFrame, 2)
+		case 0x06:
+			sconst(currentFrame, 3)
+		case 0x07:
+			sconst(currentFrame, 4)
+		case 0x08:
+			sconst(currentFrame, 5)
 		case 0x09:
 			iconst(currentFrame, -1)
 		case 0x0A:
@@ -99,6 +113,9 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x15:
 			bIndex := readU1(pByteCode, pPC)
 			aload(currentFrame, bIndex)
+		case 0x16:
+			bIndex := readU1(pByteCode, pPC)
+			sload(currentFrame, bIndex)
 		case 0x17:
 			bIndex := readU1(pByteCode, pPC)
 			iload(currentFrame, bIndex)
@@ -110,6 +127,15 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			aload(currentFrame, 2) //aload_2
 		case 0x1B:
 			aload(currentFrame, 3) //aload_3
+		case 0x1C:
+			sload(currentFrame, 0) //sload_0
+		case 0x1D:
+			sload(currentFrame, 1) //sload_1
+		case 0x1E:
+			sload(currentFrame, 2) //sload_2
+		case 0x1F:
+			sload(currentFrame, 3) //sload_3
+
 		case 0x20:
 			iload(currentFrame, 0) //iload_0
 		case 0x21:
@@ -127,6 +153,9 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x28:
 			bValue := readU1(pByteCode, pPC)
 			astore(currentFrame, bValue)
+		case 0x29:
+			bValue := readU1(pByteCode, pPC)
+			sstore(currentFrame, bValue)
 		case 0x2A:
 			bIndex := readU1(pByteCode, pPC)
 			istore(currentFrame, bIndex)
@@ -138,6 +167,14 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			astore(currentFrame, 2) //astore_2
 		case 0x2E:
 			astore(currentFrame, 3) //astore_3
+		case 0x2F:
+			sstore(currentFrame, 0)
+		case 0x30:
+			sstore(currentFrame, 1)
+		case 0x31:
+			sstore(currentFrame, 2)
+		case 0x32:
+			sstore(currentFrame, 3)
 		case 0x33:
 			istore(currentFrame, 0) //istore_0
 		case 0x34:
@@ -153,13 +190,15 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x39:
 			sastore(currentFrame)
 		case 0x3B:
-			popVal := popBytecode(currentFrame)
+			//popVal := popBytecode(currentFrame)
 		case 0x3D:
 			dup(currentFrame)
 		case 0x3E:
 			dup2(currentFrame)
 		case 0x3F:
 			dupX(currentFrame) //todo
+		case 0x41:
+			sadd(currentFrame)
 		case 0x42:
 			iadd(currentFrame)
 		case 0x44:
@@ -180,6 +219,14 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			ior(currentFrame)
 		case 0x58:
 			ixor(currentFrame)
+		case 0x59:
+			index := readU1(pByteCode, pPC)
+			constant := int8(readU1(pByteCode, pPC))
+			sinc(currentFrame, index, constant)
+		case 0x5A:
+			index := readU1(pByteCode, pPC)
+			constant := int8(readU1(pByteCode, pPC))
+			iint(currentFrame, index, constant)
 		case 0x5D:
 			i2b(currentFrame)
 		case 0x5E:
@@ -212,17 +259,17 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			bValue := int8(readU1(pByteCode, pPC))
 			goTo(currentFrame, bValue, pPC)
 		case 0x77:
-			invokerFrame := vm.stackFrame[vm.frameTop-1]
+			invokerFrame := vm.StackFrame[vm.FrameTop-1]
 			areturn(currentFrame, invokerFrame)
-			vm.frameTop--
+			vm.popFrame()
 			return
 		case 0x79:
-			invokerFrame := vm.stackFrame[vm.frameTop-1]
+			invokerFrame := vm.StackFrame[vm.FrameTop-1]
 			ireturn(currentFrame, invokerFrame)
-			vm.frameTop--
+			vm.popFrame()
 			return
 		case 0x7A:
-			vm.frameTop--
+			vm.popFrame()
 			return
 		case 0x8B:
 			index := readU2(pByteCode, pPC)

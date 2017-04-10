@@ -156,22 +156,24 @@ func BuildApplet(dataBuffer []byte, dataLength int) *CardApplet {
 
 	/*Parse applet component*/
 	var iPosa int
-	if sizes[TagAppletComp-1] == 0 {
-		return nil
-	}
-	appletcount := readU1(pAppletComponent, &iPosa)
-	applets := make([]*Applet, appletCount)
-	for ia := 0; ia < int(appletcount); ia++ {
-		aidLength := readU1(pAppletComponent, &iPosa)
-		paidArray := make([]uint8, aidLength)
-		for i = 0; i < aidLength; i++ {
-			paidArray[i] = readU1(pAppletComponent, &iPosa)
+	if sizes[TagAppletComp-1] != 0 {
+		//return nil
+		appletcount := readU1(pAppletComponent, &iPosa)
+		applets := make([]*Applet, appletCount)
+		for ia := 0; ia < int(appletcount); ia++ {
+			aidLength := readU1(pAppletComponent, &iPosa)
+			paidArray := make([]uint8, aidLength)
+			for i = 0; i < aidLength; i++ {
+				paidArray[i] = readU1(pAppletComponent, &iPosa)
+			}
+			installoffset := readU2(pAppletComponent, &iPosa)
+			applets[ia] = &Applet{aidLength, paidArray, installoffset}
 		}
-		installoffset := readU2(pAppletComponent, &iPosa)
-		applets[ia] = &Applet{aidLength, paidArray, installoffset}
-	}
 
-	newapplet.PApplet = &AppletComponent{appletcount, applets}
+		newapplet.PApplet = &AppletComponent{appletcount, applets}
+	} else {
+		newapplet.PApplet = &AppletComponent{}
+	}
 
 	/*Parse import component*/
 	iPosimp := 0
@@ -358,7 +360,6 @@ func BuildApplet(dataBuffer []byte, dataLength int) *CardApplet {
 	var iPose int
 	ipExport := &ExportComponent{}
 	if len(pExportComponent) != 0 {
-
 		classCount := readU1(pExportComponent, &iPose)
 		pClassExport := make([]*ClassExportInfo, classCount)
 		for ia := 0; ia < int(classCount); ia++ {
@@ -387,7 +388,7 @@ func BuildApplet(dataBuffer []byte, dataLength int) *CardApplet {
 	var iPosd int
 	dclength := sizes[TagDescriptorComp-1]
 	ccount := readU1(pDescriptorComponent, &iPosd)
-	pcDis := make([]*ClassDescriptorInfo, count)
+	pcDis := make([]*ClassDescriptorInfo, ccount)
 	for ia := 0; ia < int(ccount); ia++ {
 		token := readU1(pDescriptorComponent, &iPosd)
 		accessFlags := readU1(pDescriptorComponent, &iPosd)
@@ -435,7 +436,7 @@ func BuildApplet(dataBuffer []byte, dataLength int) *CardApplet {
 	for ia := 0; iPosd < int(dclength); ia++ {
 		nibCount := readU1(pDescriptorComponent, &iPosd)
 		typeArray := make([]uint8, nibCount)
-		fmt.Println(nibCount, iPosd)
+		//fmt.Println(nibCount, iPosd)
 		l := 0
 		for i := 0; i < int((nibCount+1)/2); i++ {
 			val := readU1(pDescriptorComponent, &iPosd)

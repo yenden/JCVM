@@ -1,5 +1,9 @@
 package core
 
+import (
+	"fmt"
+)
+
 type ExceptionHandlerInfo struct {
 	startOffset    uint16
 	activeLength   uint16
@@ -33,9 +37,9 @@ func isAbstract(flag uint8) bool {
 }
 
 func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet, vm *VM, Invokercond bool) {
-	iPosm2 := int(offset)
+	iPosm2 := int(offset - 1)
 	flags := readU1(mComp.pMethodInfo, &iPosm2)
-	currFrame := vm.stackFrame[vm.frameTop]
+	currFrame := vm.StackFrame[vm.FrameTop]
 	var maxStack, nargs, maxLocals uint8
 	if isExtended(flags) {
 		maxStack = readU1(mComp.pMethodInfo, &iPosm2)
@@ -48,11 +52,12 @@ func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet
 		nargs = readHighShift(bitField)
 		maxLocals = readLow(bitField)
 	}
+	fmt.Println("max stack", maxStack, "maxlocal", maxLocals)
 	currFrame.opStackTop = -1
-	currFrame.localvariables = make([]interface{}, maxLocals)
-	currFrame.operandStack = make([]interface{}, maxStack)
+	currFrame.localvariables = make([]interface{}, 256)
+	currFrame.operandStack = make([]interface{}, 256)
 	if Invokercond == true {
-		invokerframe := vm.stackFrame[vm.frameTop-1]
+		invokerframe := vm.StackFrame[vm.FrameTop-1]
 		for i := nargs; i > 0; i-- {
 			currFrame.localvariables[i-1] = invokerframe.pop()
 		}

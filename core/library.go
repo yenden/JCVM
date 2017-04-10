@@ -2,7 +2,7 @@ package core
 
 import "container/list"
 
-var Lst *list.List
+var Lst *list.List = list.New()
 
 func findLibrary(pPI *PackageInfo) *CardApplet {
 	for e := Lst.Front(); e != nil; e = e.Next() {

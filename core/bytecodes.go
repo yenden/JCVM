@@ -24,6 +24,14 @@ func iload(currF *Frame, index uint8) {
 	val := currF.localvariables[index]
 	currF.push(val.(int32))
 }
+func sload(currF *Frame, index uint8) {
+	val := currF.localvariables[index]
+	currF.push(val.(int16))
+}
+func sconst(currF *Frame, value int8) {
+	currF.push(int16(value))
+
+}
 func aaload(currF *Frame) {
 	index := currF.pop()
 	arrayref := currF.pop()
@@ -72,6 +80,10 @@ func istore(currF *Frame, index uint8) {
 	currF.localvariables[index] = val.(int32)
 
 }
+func sstore(currF *Frame, index uint8) {
+	val := currF.pop()
+	currF.localvariables[index] = val.(int16)
+}
 func aastore(currF *Frame) {
 	refval := currF.pop()
 	index := currF.pop()
@@ -109,6 +121,12 @@ func sastore(currF *Frame) {
 	}
 
 }
+
+func sinc(currF *Frame, index uint8, constant int8) {
+	interm := currF.localvariables[index].(int16)
+	currF.localvariables[index] = interm + int16(constant)
+	fmt.Println("Result ", currF.localvariables[index].(int16))
+}
 func popBytecode(currF *Frame) interface{} {
 	interm := currF.operandStack[currF.opStackTop]
 	switch interm.(type) {
@@ -136,6 +154,12 @@ func iadd(currF *Frame) {
 	value1 := currF.pop()
 	value2 := currF.pop()
 	result := value1.(int32) + value2.(int32)
+	currF.push(result)
+}
+func sadd(currF *Frame) {
+	value1 := currF.pop()
+	value2 := currF.pop()
+	result := value1.(int16) + value2.(int16)
 	currF.push(result)
 }
 func isub(currF *Frame) {
@@ -263,6 +287,12 @@ func ifnnnull(currF *Frame, branch int8, pPC *int) {
 		(*pPC) -= 2
 	}
 }
+func iint(currF *Frame, index uint8, constant int8) {
+	switch currF.localvariables[index].(type) {
+	case int32:
+		currF.localvariables[index] = int32(constant)
+	}
+}
 func goTo(currF *Frame, branch int8, pPC *int) {
 	(*pPC) += int(branch)
 	(*pPC) -= 2
@@ -290,7 +320,7 @@ func invokevirtual(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 			token := pCI.info[2]
 			index2 := token - pcLInf.publicMethodTableBase
 			newFrame := &Frame{}
-			vm.pushFrame(newFrame)
+			vm.PushFrame(newFrame)
 			pCL.AbsA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCL.AbsA, vm, true)
 		} else {
 			fmt.Println("Error: cannot invoke virtual package not found")
@@ -301,7 +331,7 @@ func invokevirtual(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 		token := pCI.info[2]
 		pcLInf := pCA.PClass.pClasses[offset]
 		newFrame := &Frame{}
-		vm.pushFrame(newFrame)
+		vm.PushFrame(newFrame)
 		if token&0x80 == 0x80 {
 			index2 := token - pcLInf.packageMethodTableBase
 			pCA.PMethod.executeByteCode(pcLInf.packageVirtualMethodTable[index2], pCA, vm, true)
@@ -331,7 +361,7 @@ func invokespecial(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 				token := pCI.info[2]
 				index2 := token - pcLInf.publicMethodTableBase
 				newFrame := &Frame{}
-				vm.pushFrame(newFrame)
+				vm.PushFrame(newFrame)
 				pCL.AbsA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCL.AbsA, vm, true)
 			} else {
 				fmt.Println("Error: cannot invoke special package not found")
@@ -355,7 +385,7 @@ func invokeinterface(currF *Frame, pCA *AbstractApplet, vm *VM, nargs uint8, ind
 	for i := nargs; i > 0; i-- {
 		newFrame.localvariables[i-1] = currF.pop()
 	}
-	vm.pushFrame(newFrame)
+	vm.PushFrame(newFrame)
 	objref := newFrame.localvariables[0].(Reference) //the object reference
 	byte1 := uint8((objref & 0xFF00) >> 4)
 	byte2 := uint8(objref & 0x00FF)
@@ -424,6 +454,8 @@ func invokeinterface(currF *Frame, pCA *AbstractApplet, vm *VM, nargs uint8, ind
 		}
 	}
 }
+
+//new bytecode :todo
 
 /*
 *****Byte code verification for later*****
