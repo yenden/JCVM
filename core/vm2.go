@@ -104,6 +104,12 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			iconst(currentFrame, 4)
 		case 0x0F:
 			iconst(currentFrame, 5)
+		case 0x10:
+			byte1 := readU1(pByteCode, pPC)
+			bspush(currentFrame, byte1)
+		case 0x11:
+			byte1 := readU2(pByteCode, pPC)
+			sspush(currentFrame, byte1)
 		case 0x12:
 			byte1 := readU1(pByteCode, pPC)
 			bipush(currentFrame, byte1)
@@ -135,7 +141,6 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			sload(currentFrame, 2) //sload_2
 		case 0x1F:
 			sload(currentFrame, 3) //sload_3
-
 		case 0x20:
 			iload(currentFrame, 0) //iload_0
 		case 0x21:
@@ -190,7 +195,7 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x39:
 			sastore(currentFrame)
 		case 0x3B:
-			//popVal := popBytecode(currentFrame)
+			popBytecode(currentFrame)
 		case 0x3D:
 			dup(currentFrame)
 		case 0x3E:
@@ -204,6 +209,8 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			iadd(currentFrame)
 		case 0x44:
 			isub(currentFrame)
+		case 0x45:
+			smul(currentFrame)
 		case 0x46:
 			imul(currentFrame)
 		case 0x48:
@@ -256,12 +263,20 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x67:
 			bValue := int8(readU1(pByteCode, pPC))
 			ifnnnull(currentFrame, bValue, pPC)
+		case 0x6B:
+			bValue := int8(readU1(pByteCode, pPC))
+			ifScmpne(currentFrame, bValue, pPC)
 		case 0x70:
 			bValue := int8(readU1(pByteCode, pPC))
 			goTo(currentFrame, bValue, pPC)
 		case 0x77:
 			invokerFrame := vm.StackFrame[vm.FrameTop-1]
 			areturn(currentFrame, invokerFrame)
+			vm.popFrame()
+			return
+		case 0x78:
+			invokerFrame := vm.StackFrame[vm.FrameTop-1]
+			sreturn(currentFrame, invokerFrame)
 			vm.popFrame()
 			return
 		case 0x79:
@@ -272,26 +287,51 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x7A:
 			vm.popFrame()
 			return
+		case 0x87:
+			index7 := readU1(pByteCode, pPC)
+			putfield(currentFrame, index7, pCA)
+		case 0x88:
+			index8 := readU1(pByteCode, pPC)
+			putfield(currentFrame, index8, pCA)
+		case 0x89:
+			index9 := readU1(pByteCode, pPC)
+			putfield(currentFrame, index9, pCA)
+		case 0x8a:
+			indexa := readU1(pByteCode, pPC)
+			putfield(currentFrame, indexa, pCA)
 		case 0x8B:
-			index := readU2(pByteCode, pPC)
-			invokevirtual(currentFrame, index, pCA, vm)
+			indexb := readU2(pByteCode, pPC)
+			invokevirtual(currentFrame, indexb, pCA, vm)
 		case 0x8C:
-			index := readU2(pByteCode, pPC)
-			invokespecial(currentFrame, index, pCA, vm)
+			indexc := readU2(pByteCode, pPC)
+			invokespecial(currentFrame, indexc, pCA, vm)
 		case 0x8D:
-			index := readU2(pByteCode, pPC)
-			invokestatic(currentFrame, index, pCA, vm)
+			indexd := readU2(pByteCode, pPC)
+			invokestatic(currentFrame, indexd, pCA, vm)
 		case 0x8E:
 			nargs := readU1(pByteCode, pPC)
-			index := readU2(pByteCode, pPC)
+			indexe := readU2(pByteCode, pPC)
 			methodToken := readU1(pByteCode, pPC)
-			invokeinterface(currentFrame, pCA, vm, nargs, index, methodToken)
+			invokeinterface(currentFrame, pCA, vm, nargs, indexe, methodToken)
 		case 0x8F:
-			index := readU2(pByteCode, pPC)
-			vmNew(currentFrame, index, pCA)
+			index2 := readU2(pByteCode, pPC)
+			vmNew(currentFrame, index2, pCA)
 		case 0x90:
 			atype := readU1(pByteCode, pPC)
 			newArray(currentFrame, atype)
+		case 0xAD:
+			indexad := readU1(pByteCode, pPC)
+			getFieldThis(currentFrame, indexad, pCA)
+		case 0xAE:
+			indexae := readU1(pByteCode, pPC)
+			getFieldThis(currentFrame, indexae, pCA)
+		case 0xAF:
+			indexaf := readU1(pByteCode, pPC)
+			getFieldThis(currentFrame, indexaf, pCA)
+
+		case 0xB0:
+			indexb0 := readU1(pByteCode, pPC)
+			getFieldThis(currentFrame, indexb0, pCA)
 		}
 
 	}

@@ -18,10 +18,10 @@ type AbstractApplet struct {
 }
 
 func (abs *AbstractApplet) isThisLibrary(pPI *PackageInfo) bool {
-	minV := abs.PHeader.pThisPackage.MinorVersion
-	majV := abs.PHeader.pThisPackage.MajorVersion
+	/*minV := abs.PHeader.pThisPackage.MinorVersion
+	majV := abs.PHeader.pThisPackage.MajorVersion*/
 	aidL := abs.PHeader.pThisPackage.AIDLength
-	if minV == pPI.MinorVersion && majV == pPI.MajorVersion && aidL == pPI.AIDLength {
+	if /*minV == pPI.MinorVersion && majV == pPI.MajorVersion &&*/ aidL == pPI.AIDLength {
 		for i := 0; i < int(aidL); i++ {
 			if abs.PHeader.pThisPackage.AID[i] != pPI.AID[i] {
 				return false

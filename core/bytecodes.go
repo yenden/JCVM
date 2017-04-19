@@ -16,9 +16,15 @@ func bipush(currF *Frame, byte1 uint8) {
 func sipush(currF *Frame, sValue int16) {
 	currF.push(int32(sValue))
 }
+func bspush(currF *Frame, value uint8) {
+	currF.push(int16(value))
+}
+func sspush(currF *Frame, value uint16) {
+	currF.push(int16(value))
+}
 func aload(currF *Frame, index uint8) {
 	val := currF.localvariables[index]
-	currF.push(val)
+	currF.push(val.(Reference))
 }
 func iload(currF *Frame, index uint8) {
 	val := currF.localvariables[index]
@@ -70,7 +76,7 @@ func astore(currF *Frame, index uint8) {
 	ref := currF.pop()
 	switch ref.(type) {
 	case Reference:
-		currF.localvariables[index] = ref.(Reference)
+		currF.localvariables[index] = Reference(ref.(Reference))
 	case ReturnAddress:
 		currF.localvariables[index] = ref.(ReturnAddress)
 	}
@@ -127,18 +133,26 @@ func sinc(currF *Frame, index uint8, constant int8) {
 	currF.localvariables[index] = interm + int16(constant)
 	fmt.Println("Result ", currF.localvariables[index].(int16))
 }
-func popBytecode(currF *Frame) interface{} {
+func popBytecode(currF *Frame) {
 	interm := currF.operandStack[currF.opStackTop]
 	switch interm.(type) {
 	case int16:
-		return currF.pop()
+		currF.pop()
+	case uint16:
+		currF.pop()
 	}
-	return NullType(0)
+
 }
 func dup(currF *Frame) {
 	interm := currF.operandStack[currF.opStackTop]
-	currF.push(interm.(int16))
-
+	switch interm.(type) {
+	case int16:
+		currF.push(interm.(int16))
+	case uint16:
+		currF.push(interm.(uint16))
+	case Reference:
+		currF.push(interm.(Reference))
+	}
 }
 func dup2(currF *Frame) {
 	interm1 := currF.operandStack[currF.opStackTop]
@@ -203,6 +217,12 @@ func imul(currF *Frame) {
 	value1 := currF.pop()
 	value2 := currF.pop()
 	result := value1.(int32) * value2.(int32)
+	currF.push(result)
+}
+func smul(currF *Frame) {
+	value1 := currF.pop()
+	value2 := currF.pop()
+	result := value1.(int16) * value2.(int16)
 	currF.push(result)
 }
 func idiv(currF *Frame) {
@@ -336,6 +356,11 @@ func ireturn(currF *Frame, invokerF *Frame) {
 	objref := currF.pop()
 	invokerF.push(objref.(int32))
 }
+func sreturn(currF *Frame, invokerF *Frame) {
+	objref := currF.pop()
+	invokerF.push(objref.(int16))
+}
+
 func invokevirtual(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 	pCI := pCA.PConstPool.pConstantPool[index]
 	byte1 := pCI.info[0]
@@ -346,13 +371,18 @@ func invokevirtual(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 		if pCL != nil {
 			//External library
 			classtoken := pCI.info[1]
-			sOffset := pCL.AbsA.PExport.pClassExport[classtoken].classOffset
-			pcLInf := pCL.AbsA.PClass.pClasses[sOffset]
-			token := pCI.info[2]
-			index2 := token - pcLInf.publicMethodTableBase
+			sOffset := pCL.AbsA.PExport.pClassExport[classtoken].pStaticMethodOffsets[pCI.info[2]]
 			newFrame := &Frame{}
 			vm.PushFrame(newFrame)
-			pCL.AbsA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCL.AbsA, vm, true)
+			pCL.AbsA.PMethod.executeByteCode(sOffset, pCL.AbsA, vm, true)
+			/*	classtoken := pCI.info[1]
+				sOffset := pCL.AbsA.PExport.pClassExport[classtoken].classOffset
+				pcLInf := pCL.AbsA.PClass.pClasses[sOffset]
+				token := pCI.info[2]
+				index2 := token - pcLInf.publicMethodTableBase
+				newFrame := &Frame{}
+				vm.PushFrame(newFrame)
+				pCL.AbsA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCL.AbsA, vm, true)*/
 		} else {
 			fmt.Println("Error: cannot invoke virtual package not found")
 		}
@@ -360,7 +390,7 @@ func invokevirtual(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 	} else { //Interal class library
 		offset := makeU2(pCI.info[0], pCI.info[1])
 		token := pCI.info[2]
-		pcLInf := pCA.PClass.pClasses[offset]
+		pcLInf := pCA.PClass.pClasses[offset-2]
 		newFrame := &Frame{}
 		vm.PushFrame(newFrame)
 		if token&0x80 == 0x80 {
@@ -379,6 +409,8 @@ func invokespecial(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 	if pCI.tag == 0x06 { //static method
 		if byte1 == 0x00 {
 			sOffset := makeU2(pCI.info[1], pCI.info[2])
+			newFrame := &Frame{}
+			vm.PushFrame(newFrame)
 			pCA.PMethod.executeByteCode(sOffset, pCA, vm, true)
 		} else {
 			packageIndex := byte1 & 0x7F
@@ -387,13 +419,19 @@ func invokespecial(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 			if pCL != nil {
 				//External library
 				classtoken := pCI.info[1]
-				sOffset := pCL.AbsA.PExport.pClassExport[classtoken].classOffset
-				pcLInf := pCL.AbsA.PClass.pClasses[sOffset]
-				token := pCI.info[2]
-				index2 := token - pcLInf.publicMethodTableBase
+				sOffset := pCL.AbsA.PExport.pClassExport[classtoken].pStaticMethodOffsets[pCI.info[2]]
 				newFrame := &Frame{}
 				vm.PushFrame(newFrame)
-				pCL.AbsA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCL.AbsA, vm, true)
+				pCL.AbsA.PMethod.executeByteCode(sOffset, pCL.AbsA, vm, true)
+				/*
+					sOffset := pCL.AbsA.PExport.pClassExport[classtoken].classOffset
+					pcLInf := pCL.AbsA.PClass.pClasses[sOffset]
+					token := pCI.info[2]
+					index2 := token - pcLInf.publicMethodTableBase
+					newFrame := &Frame{}
+					vm.PushFrame(newFrame)
+					pCL.AbsA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCL.AbsA, vm, true)
+				*/
 			} else {
 				fmt.Println("Error: cannot invoke special package not found")
 			}
@@ -503,58 +541,64 @@ func vmNew(currF *Frame, index uint16, pCA *AbstractApplet) {
 			fmt.Println("Error: cannot create class package not found")
 		}
 	} else {
+
 		offset := makeU2(pCI.info[0], pCI.info[1])
 		token := pCI.info[2]
 		//	pcLInf := pCA.PClass.pClasses[offset]
 		class = createClassInstance(token, offset, pCA)
 	}
-
 	heap[Reference(jcCount+1)] = class
 	currF.push(Reference(jcCount + 1)) //arbritrary number
 }
 func createClassInstance(classtoken uint8, soffset uint16, pCL *AbstractApplet) *JavaClass {
-	javaClass := &JavaClass{}
-	javaClass.superclassref = pCL.PClass.pClasses[soffset].superClassRef
-	javaClass.declaredinstancesize = pCL.PClass.pClasses[soffset].declaredInstanceSize
+	//javaClass := &JavaClass{}
+	superclassref := pCL.PClass.pClasses[soffset-2].superClassRef
+	declaredinstancesize := pCL.PClass.pClasses[soffset-2].declaredInstanceSize
 	var classInf *ClassDescriptorInfo
+	var classref uint16
 	for i := 0; i < int(pCL.PDescriptor.classCount); i++ {
 		if pCL.PDescriptor.classes[i].token == classtoken {
-			javaClass.classref = pCL.PDescriptor.classes[i].thisClassRef
+			classref = pCL.PDescriptor.classes[i].thisClassRef
 			classInf = pCL.PDescriptor.classes[i]
 			break
 		}
 	}
-	setInstanceFieldDefaultValue(classInf, javaClass)
+	javaClass := &JavaClass{classref, superclassref, declaredinstancesize, nil, nil}
+	setInstanceFieldsDefaultValue(classInf, javaClass)
 	return javaClass
 }
-func setInstanceFieldDefaultValue(classInf *ClassDescriptorInfo, javaClass *JavaClass) {
+func setInstanceFieldsDefaultValue(classInf *ClassDescriptorInfo, javaClass *JavaClass) {
+	var token uint8
+	var value interface{}
 	javaClass.fields = make([]*instanceField, classInf.fieldCount)
 	for i := 0; i < int(classInf.fieldCount); i++ {
 		if classInf.fields[i].pAF&AccStatic != AccStatic {
-			switch classInf.fields[i].pFieldtype {
-			case 0x1002:
+			a := classInf.fields[i].pFieldtype
+			switch a {
+			case 0x8002:
 				//bool
-				javaClass.fields[i].token = classInf.fields[i].token
-				javaClass.fields[i].value = int16(0)
-			case 0x1003:
+				token = classInf.fields[i].token
+				value = int16(0)
+			case 0x8003:
 				//byte
-				javaClass.fields[i].token = classInf.fields[i].token
-				javaClass.fields[i].value = int16(0)
+				token = classInf.fields[i].token
+				value = int16(0)
 
-			case 0x1004:
+			case 0x8004:
 				//short
-				javaClass.fields[i].token = classInf.fields[i].token
-				javaClass.fields[i].value = int16(0)
+				token = classInf.fields[i].token
+				value = int16(0)
 
-			case 0x1005:
+			case 0x8005:
 				//int
-				javaClass.fields[i].token = classInf.fields[i].token
-				javaClass.fields[i].value = int32(0)
+				token = classInf.fields[i].token
+				value = int32(0)
 			default:
 				//reference type
-				javaClass.fields[i].token = classInf.fields[i].token
-				javaClass.fields[i].value = Reference(0)
+				token = classInf.fields[i].token
+				value = Reference(0)
 			}
+			javaClass.fields[i] = &instanceField{token, value}
 		}
 	}
 }
@@ -608,6 +652,52 @@ func anewArray(currF *Frame, index uint16, pCA *AbstractApplet) {
 		//trouver si c'est interface  ou class ensuite creer sur heap
 	}
 
+}
+func getFieldThis(currF *Frame, index uint8, pCA *AbstractApplet) {
+	pCI := pCA.PConstPool.pConstantPool[index]
+	instanceref := currF.localvariables[0].(Reference)
+	class := heap[Reference(instanceref)]
+	switch class.(type) {
+	case *JavaClass:
+		for i := 0; i < len(class.(*JavaClass).fields); i++ {
+			if class.(*JavaClass).fields[i].token == pCI.info[2] {
+				value := class.(*JavaClass).fields[i].value
+				switch value.(type) {
+				case uint8:
+					currF.push(int16(value.(uint8)))
+				case int16:
+					currF.push(value.(int16))
+				default:
+					currF.push(value)
+				}
+				break
+			}
+		}
+	}
+}
+func ifScmpne(currF *Frame, branch int8, pPC *int) {
+	value2 := currF.pop()
+	value1 := currF.pop()
+	if value1.(int16) != value2.(int16) {
+		(*pPC) += int(branch)
+		(*pPC) -= 2
+	}
+}
+func putfield(currF *Frame, index uint8, pCA *AbstractApplet) {
+	svalue := currF.pop()
+	objref := currF.pop()
+	pCI := pCA.PConstPool.pConstantPool[index]
+	class := heap[objref.(Reference)]
+	switch class.(type) {
+	case *JavaClass:
+		for i := 0; i < len(class.(*JavaClass).fields); i++ {
+			token := class.(*JavaClass).fields[i].token
+			if token == pCI.info[2] {
+				class.(*JavaClass).fields[i].value = svalue
+				break
+			}
+		}
+	}
 }
 
 /*
