@@ -1,8 +1,6 @@
 package main
 
-import (
-	"JCVM/core"
-)
+import "JCVM/core"
 
 func main() {
 	//args := os.Args[0:]
@@ -10,7 +8,7 @@ func main() {
 		fmt.Println("Usage: \n\tjcvm.exe library1.ijc library2.ijc ..... yourApplet.ijc ")
 	} else {*/
 	var i int
-	args := []string{`framework.ijc`, `lang.ijc`, `shortAdd.ijc`}
+	args := []string{`framework.ijc`, `lang.ijc`, `helloword.ijc`}
 	for i = 0; i < len(args)-1; i++ {
 		dataBuffer := core.ReadInBuffer(args[i])
 		core.Lst.PushBack(core.BuildApplet(dataBuffer, len(dataBuffer)))
