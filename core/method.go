@@ -65,22 +65,3 @@ func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet
 	vm.runStatic(mComp.pMethodInfo, &iPosm2, pCA, nargs)
 
 }
-
-/*
-func (mComp *MethodComponent) decodeMethod(offset uint16, pCA *AbstractApplet) (uint8, uint8, uint8, int) {
-	iPosm2 := int(offset)
-	flags := readU1(mComp.pMethodInfo, &iPosm2)
-	if isExtended(flags) {
-		maxStack := readU1(mComp.pMethodInfo, &iPosm2)
-		nargs := readU1(mComp.pMethodInfo, &iPosm2)
-		maxLocals := readU1(mComp.pMethodInfo, &iPosm2)
-		return maxStack, nargs, maxLocals, iPosm2
-	}
-	//if not extended
-	maxStack := readLow(flags)
-	bitField := readU1(mComp.pMethodInfo, &iPosm2)
-	nargs := readHighShift(bitField)
-	maxLocals := readLow(bitField)
-	return maxStack, nargs, maxLocals, iPosm2
-
-}*/

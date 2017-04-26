@@ -8,7 +8,7 @@ func main() {
 		fmt.Println("Usage: \n\tjcvm.exe library1.ijc library2.ijc ..... yourApplet.ijc ")
 	} else {*/
 	var i int
-	args := []string{`framework.ijc`, `lang.ijc`, `helloword.ijc`}
+	args := []string{`../test/framework.ijc`, `../test/lang.ijc`, `../test/helloword.ijc`}
 	for i = 0; i < len(args)-1; i++ {
 		dataBuffer := core.ReadInBuffer(args[i])
 		core.Lst.PushBack(core.BuildApplet(dataBuffer, len(dataBuffer)))

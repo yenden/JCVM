@@ -67,7 +67,7 @@ func BuildApplet(dataBuffer []byte, dataLength int) *CardApplet {
 	for i = 0; i < 12; i++ {
 		sizes[i] = readU2(dataBuffer, &iPos)
 	}
-	fmt.Println(sizes)
+	//	fmt.Println(sizes)
 	pSfsi := &StaticFieldSizeInfo{}
 	pSfsi.imageSize = readU2(dataBuffer, &iPos)
 	pSfsi.arrayInitCount = readU2(dataBuffer, &iPos)
