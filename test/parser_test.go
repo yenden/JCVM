@@ -1,7 +1,7 @@
 package test
 
 import (
-	"JCVM/core"
+	"core"
 	"testing"
 )
 
