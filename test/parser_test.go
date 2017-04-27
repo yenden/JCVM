@@ -11,7 +11,7 @@ func TestBuildApplet(t *testing.T) {
 	for i := 0; i < len(args)-1; i++ {
 		dataBuffer := core.ReadInBuffer(args[i])
 		app = core.BuildApplet(dataBuffer, len(dataBuffer))
-		if app != nil {
+		if app == nil {
 			t.Errorf("%s parsing return nil", args[i])
 		}
 	}
