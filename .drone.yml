@@ -1,8 +1,8 @@
-workspace:
-  base: /go
-  path: src/JCVM
+#workspace:
+ # base: /go
+ # path: src/JCVM
 
-pipeline:
+#pipeline:
   build:
     image: golang:latest
     commands:
