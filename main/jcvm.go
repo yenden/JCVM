@@ -1,6 +1,6 @@
 package main
 
-import "core"
+import "JCVM/core"
 
 func main() {
 	//args := os.Args[0:]
