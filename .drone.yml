@@ -1,6 +1,7 @@
-build:
-  image: golang:latest
-  commands:
-    - go get
-    - go build
-    - go test -v github.com/yenden/JCVM/test
+pipeline:
+  build:
+    image: golang:latest
+    commands:
+      - go get
+      - go build
+      - go test -v github.com/yenden/JCVM/test
