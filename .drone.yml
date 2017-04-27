@@ -3,4 +3,4 @@ build:
   commands:
     - go get
     - go build
-    - go test -v github.com/yenden/JCVM/test
+    - go test -v ./test
