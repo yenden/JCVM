@@ -1,20 +1,22 @@
-package javacard
+package impl
+
+import "JCVM/jcre/api/share"
 
 /**
  * The PackedBoolean manages booleans in volatile storage
  * space efficiently.
  */
 type PackedBoolean struct {
-	container []int8
-	nextID    int8
+	container []byte
+	nextID    byte
 }
 
 /*
  * Constructor. Allocates an instance of PackedBoolean
  */
-func initPackedBoolean(maxbytes int8) *PackedBoolean {
+func initPackedBoolean(maxbytes byte) *PackedBoolean {
 	pbl := &PackedBoolean{}
-	//pbl.container = framework.MakeTransientArray(int16(maxbytes), framework.ClearOnReset, 1)
+	pbl.container = share.MakeTransientByteArray(int16(maxbytes), share.ClearOnReset)
 	pbl.nextID = 0
 	return pbl
 }
@@ -22,7 +24,7 @@ func initPackedBoolean(maxbytes int8) *PackedBoolean {
 /**
  * Allocates a new boolean and returns the associated int8 identifier.
  */
-func (pbl *PackedBoolean) Allocate() int8 {
+func (pbl *PackedBoolean) Allocate() byte {
 	pbl.nextID++
 	return pbl.nextID
 }
@@ -30,7 +32,7 @@ func (pbl *PackedBoolean) Allocate() int8 {
 /*
  * Returns the state of identified boolean.
  */
-func (pbl *PackedBoolean) Get(identifier int8) bool {
+func (pbl *PackedBoolean) Get(identifier byte) bool {
 	return pbl.access(identifier, 0)
 }
 
@@ -44,11 +46,11 @@ func (pbl *PackedBoolean) Get(identifier int8) bool {
  *            1 set, -1 reset, 0 no change
  * @return value boolean value of specified flag
  */
-func (pbl *PackedBoolean) access(identifier int8, typ int8) bool {
-	bOff := int8(identifier >> 3)
-	bitNum := int8(identifier & 0x7)
+func (pbl *PackedBoolean) access(identifier byte, typ int8) bool {
+	bOff := byte(identifier >> 3)
+	bitNum := byte(identifier & 0x7)
 	interm := uint(bitNum)
-	bitMask := int8(int16(0x80) >> interm)
+	bitMask := byte(int16(0x80) >> interm)
 	switch typ {
 	case 1:
 		pbl.container[bOff] |= bitMask
@@ -66,7 +68,7 @@ func (pbl *PackedBoolean) access(identifier int8, typ int8) bool {
  * @param boolean
  *            identifier
  */
-func (pbl *PackedBoolean) Set(identifier int8) {
+func (pbl *PackedBoolean) Set(identifier byte) {
 	pbl.access(identifier, 1)
 }
 
@@ -76,6 +78,16 @@ func (pbl *PackedBoolean) Set(identifier int8) {
  * @param boolean
  *            identifier
  */
-func (pbl *PackedBoolean) Reset(identifier int8) {
-	pbl.access(identifier, int8(-1))
+func (pbl *PackedBoolean) Reset(identifier byte) {
+	pbl.access(identifier, -1)
+}
+
+const (
+	NumberSystemBools = 24
+)
+
+func (pckB *PackedBoolean) GetPackedBoolean() {
+	if pckB == nil {
+		pckB = initPackedBoolean(byte((NumberSystemBools-1)>>3) + 1)
+	}
 }
