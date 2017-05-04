@@ -1,5 +1,9 @@
 package core
 
+import (
+	"JCVM/jcre/api/javacard/framework"
+)
+
 type typeValue uint16
 
 const (
@@ -23,11 +27,12 @@ TypeArrayOfInt       = 0x000D
 TypeArrayOfReference = 0x000E*/
 
 var (
-	javaClassArray [256]*JavaClass
-	jcCount        = 0
-	heap           = make(map[Reference]interface{})
-	arrcount       = 511
-	interfcount    = 255
+	javaClassArray  [256]*JavaClass
+	jcCount         = -1
+	heap            = make(map[Reference]interface{})
+	instanceRefHeap = make(map[*framework.AID]Reference)
+	arrcount        = 511
+	interfcount     = 255
 	//heap           = make(map[int16]*ArrayValue)
 	//heapClass      = make(map[int16]*JavaClass)
 )
