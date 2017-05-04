@@ -60,9 +60,9 @@ const (
 )
 
 var (
-	incomingFlag, sendInProgressFlag, outgoingFlag                    byte
-	outgoingLenSetFlag, noGetResponseFlag, determinedLE, envelopeFlag byte
-	thePackedBoolean                                                  *impl.PackedBoolean
+	incomingFlag, sendInProgressFlag, outgoingFlag byte
+	outgoingLenSetFlag, noGetResponseFlag          byte
+	thePackedBoolean                               *impl.PackedBoolean
 )
 
 func initAPDU() *APDU {
@@ -325,7 +325,7 @@ func (apdu *APDU) setIL(data int16) {
 }
 
 func (apdu *APDU) ReceiveBytes(bOff int16) (int16, error) {
-	var err error
+	//var err error
 	// Main receive method. This method will receive data from the CAD,
 	// or it will issue a positive reply toretrieve the next APDU command.
 	// Only APDUs case 3 and 4 are expected to call this method.
@@ -348,13 +348,13 @@ func (apdu *APDU) ReceiveBytes(bOff int16) (int16, error) {
 	}
 	Len := int16(0)
 	if Lc != 0 {
-		if !getEnvelopeFlag() {
-			// Non-envelope case - call t0RcvData
-			Len = 0 //NativeMethods.t0RcvData(bOff)
-			if Len < 0 {
-				return 0, errors.New("Error input/output in receivebytes")
-			}
-		} else {
+		//	if !getEnvelopeFlag() {
+		// Non-envelope case - call t0RcvData
+		Len = 0 //NativeMethods.t0RcvData(bOff)
+		if Len < 0 {
+			return 0, errors.New("Error input/output in receivebytes")
+		}
+		/*	} else {
 			// Envelope case - call t0RcvData first
 			Len = 0 // NativeMethods.t0RcvData(bOff);
 
@@ -372,12 +372,12 @@ func (apdu *APDU) ReceiveBytes(bOff int16) (int16, error) {
 					log.Fatal(err)
 				}
 			}
-		}
+		}*/
 
 		// Move from scratch buffer to APDU buffer
 		//NativeMethods.t0CopyToAPDUBuffer(bOff, len)
 		Lc = Lc - Len
-		if Lc < 0 {
+		/*if Lc < 0 {
 			if Lc == -1 {
 				// Partially received LE
 				Lc = 0
@@ -389,7 +389,7 @@ func (apdu *APDU) ReceiveBytes(bOff int16) (int16, error) {
 				setDeterminedLEFlag()
 				resetEnvelopeFlag()
 			}
-		}
+		}*/
 		apdu.setLc(Lc) // update RAM copy of Lc, the count remaining
 		if Lc == 0 {
 			apdu.setCurrentState(StateFullIncoming)
@@ -397,7 +397,7 @@ func (apdu *APDU) ReceiveBytes(bOff int16) (int16, error) {
 			apdu.setCurrentState(StatePartialIncoming)
 		}
 		return Len, nil
-	} else {
+	} /*else {
 		// This is the case where LE is missing one byte
 		if getEnvelopeFlag() && getDeterminedLEFlag() {
 			Len = 0 //NativeMethods.t0RcvData(bOff);
@@ -425,7 +425,7 @@ func (apdu *APDU) ReceiveBytes(bOff int16) (int16, error) {
 			// setLe((short) (getLe() | ((buffer[(short) (bOff + len - (short) 1)] & (short) 0x00FF))));
 			resetEnvelopeFlag()
 		}
-	}
+	}*/
 	apdu.setCurrentState(StateFullIncoming)
 	return 0, nil
 }
@@ -435,7 +435,7 @@ func (apdu *APDU) getLc() int16 {
 }
 func (apdu *APDU) setPreReadLength(data int16) {
 	apdu.ramShortVars[PreReadLength] = data
-}
+} /*
 func setDeterminedLEFlag() {
 	thePackedBoolean.Set(determinedLE)
 }
@@ -444,7 +444,8 @@ func getDeterminedLEFlag() bool {
 }
 func getEnvelopeFlag() bool {
 	return thePackedBoolean.Get(envelopeFlag)
-}
+}*/
+/*
 func (apdu *APDU) processEnvelopeData(bOffset int16) (int16, error) {
 	// This method is called when an ENVELOPE command is expected
 	// in order to retrieve its payload.
@@ -468,10 +469,11 @@ func isISOInterindustryCLA(aBuffer []byte) bool {
 		return true
 	}
 	return false
-}
+}*/
+/*
 func resetEnvelopeFlag() {
 	thePackedBoolean.Reset(envelopeFlag)
-}
+}*/
 func (apdu *APDU) SendBytesLong(outData []byte, bOff int16, Len int16) {
 	impl.CheckArrayArgs(outData, bOff, Len)
 	sendLength := int16(len(apdu.buffer))

@@ -550,7 +550,7 @@ func vmNew(currF *Frame, index uint16, pCA *AbstractApplet) {
 	}
 	jcCount++
 	//add in the map between aid and instance references
-	pckg := pCA.PHeader.pThisPackage
+	pckg := pCA.PHeader.PThisPackage
 	aid := framework.InitAID(pckg.AID, 0, int16(pckg.AIDLength))
 	instanceRefHeap[aid] = Reference(jcCount)
 

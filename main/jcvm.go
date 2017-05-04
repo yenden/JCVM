@@ -1,12 +1,27 @@
 package main
 
+import (
+	"JCVM/core"
+	"JCVM/jcre/cadClient"
+)
+
+func main() {
+	args := []string{`../test/framework.ijc`, `../test/lang.ijc`, `../test/helloword.ijc`}
+	for i := 0; i < len(args)-1; i++ {
+		dataBuffer := core.ReadInBuffer(args[i])
+		core.Lst.PushBack(core.BuildApplet(dataBuffer))
+	}
+	cadClient.LaunchServer()
+}
+
+/*
 import "JCVM/core"
 
 func main() {
 	//args := os.Args[0:]
-	/*	if args == nil || len(args) == 0 {
+		//if args == nil || len(args) == 0 {
 		fmt.Println("Usage: \n\tjcvm.exe library1.ijc library2.ijc ..... yourApplet.ijc ")
-	} else {*/
+//	} else {
 	var i int
 	args := []string{`../test/framework.ijc`, `../test/lang.ijc`, `../test/helloword.ijc`}
 	for i = 0; i < len(args)-1; i++ {
@@ -26,4 +41,4 @@ func initVM() *core.VM {
 	f := &core.Frame{}
 	vm.PushFrame(f)
 	return vm
-}
+}*/
