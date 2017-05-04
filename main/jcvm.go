@@ -11,10 +11,10 @@ func main() {
 	args := []string{`../test/framework.ijc`, `../test/lang.ijc`, `../test/helloword.ijc`}
 	for i = 0; i < len(args)-1; i++ {
 		dataBuffer := core.ReadInBuffer(args[i])
-		core.Lst.PushBack(core.BuildApplet(dataBuffer, len(dataBuffer)))
+		core.Lst.PushBack(core.BuildApplet(dataBuffer))
 	}
 	appletBuffer := core.ReadInBuffer(args[i])
-	capp := core.BuildApplet(appletBuffer, len(appletBuffer))
+	capp := core.BuildApplet(appletBuffer)
 	vm := initVM()
 	capp.Install(vm)
 	//}
