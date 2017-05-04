@@ -23,7 +23,7 @@ func ReadInBuffer(fileName string) []byte {
 }
 
 //BuildApplet parse the ijc file and fill components
-func BuildApplet(dataBuffer []byte, dataLength int) *CardApplet {
+func BuildApplet(dataBuffer []byte) *CardApplet {
 
 	var iPos int
 	newapplet := &CardApplet{}
@@ -103,7 +103,7 @@ func BuildApplet(dataBuffer []byte, dataLength int) *CardApplet {
 	pDebugComponent := make([]uint8, sizes[TagDebugComp-1])
 
 	var compLength uint16
-	for iPos < dataLength-1 {
+	for iPos < len(dataBuffer)-1 {
 		c1 = readU1(dataBuffer, &iPos)
 		compLength = readU2(dataBuffer, &iPos)
 		switch c1 {
