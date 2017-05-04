@@ -20,10 +20,10 @@ type AbstractApplet struct {
 func (abs *AbstractApplet) isThisLibrary(pPI *PackageInfo) bool {
 	/*minV := abs.PHeader.pThisPackage.MinorVersion
 	majV := abs.PHeader.pThisPackage.MajorVersion*/
-	aidL := abs.PHeader.pThisPackage.AIDLength
+	aidL := abs.PHeader.PThisPackage.AIDLength
 	if /*minV == pPI.MinorVersion && majV == pPI.MajorVersion &&*/ aidL == pPI.AIDLength {
 		for i := 0; i < int(aidL); i++ {
-			if abs.PHeader.pThisPackage.AID[i] != pPI.AID[i] {
+			if abs.PHeader.PThisPackage.AID[i] != pPI.AID[i] {
 				return false
 			}
 		}
@@ -75,5 +75,5 @@ func (cl *CardApplet) Install(vm *VM) {
 	fmt.Println("Install finished!")
 }
 
-func (cl *CardApplet) Process() {
+func (cl *CardApplet) Process(vm *VM) {
 }
