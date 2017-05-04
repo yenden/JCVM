@@ -1,6 +1,7 @@
 package core
 
 import (
+	"JCVM/jcre/api/javacard/framework"
 	"fmt"
 )
 
@@ -547,8 +548,15 @@ func vmNew(currF *Frame, index uint16, pCA *AbstractApplet) {
 		//	pcLInf := pCA.PClass.pClasses[offset]
 		class = createClassInstance(token, offset, pCA)
 	}
-	heap[Reference(jcCount+1)] = class
-	currF.push(Reference(jcCount + 1)) //arbritrary number
+	jcCount++
+	//add in the map between aid and instance references
+	pckg := pCA.PHeader.pThisPackage
+	aid := framework.InitAID(pckg.AID, 0, int16(pckg.AIDLength))
+	instanceRefHeap[aid] = Reference(jcCount)
+
+	//add instance in memory heap
+	heap[Reference(jcCount)] = class
+	currF.push(Reference(jcCount)) //arbritrary number
 }
 func createClassInstance(classtoken uint8, soffset uint16, pCL *AbstractApplet) *JavaClass {
 	//javaClass := &JavaClass{}
