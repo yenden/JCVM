@@ -10,7 +10,7 @@ type ReturnAddress int
 type Reference uint16
 type NullType int
 type Frame struct {
-	localvariables []interface{}
+	Localvariables []interface{}
 	operandStack   []interface{}
 	opStackTop     int
 }

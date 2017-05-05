@@ -54,12 +54,12 @@ func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet
 	}
 	fmt.Println("max stack", maxStack, "maxlocal", maxLocals)
 	currFrame.opStackTop = -1
-	currFrame.localvariables = make([]interface{}, 256)
+	currFrame.Localvariables = make([]interface{}, 256)
 	currFrame.operandStack = make([]interface{}, 256)
 	if Invokercond == true {
 		invokerframe := vm.StackFrame[vm.FrameTop-1]
 		for i := nargs; i > 0; i-- {
-			currFrame.localvariables[i-1] = invokerframe.pop()
+			currFrame.Localvariables[i-1] = invokerframe.pop()
 		}
 	}
 	vm.runStatic(mComp.pMethodInfo, &iPosm2, pCA, nargs)

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"JCVM/jcre/api/javacard/framework"
 	"fmt"
 )
 
@@ -24,15 +23,15 @@ func sspush(currF *Frame, value uint16) {
 	currF.push(int16(value))
 }
 func aload(currF *Frame, index uint8) {
-	val := currF.localvariables[index]
+	val := currF.Localvariables[index]
 	currF.push(val.(Reference))
 }
 func iload(currF *Frame, index uint8) {
-	val := currF.localvariables[index]
+	val := currF.Localvariables[index]
 	currF.push(val.(int32))
 }
 func sload(currF *Frame, index uint8) {
-	val := currF.localvariables[index]
+	val := currF.Localvariables[index]
 	currF.push(val.(int16))
 }
 func sconst(currF *Frame, value int8) {
@@ -77,19 +76,19 @@ func astore(currF *Frame, index uint8) {
 	ref := currF.pop()
 	switch ref.(type) {
 	case Reference:
-		currF.localvariables[index] = Reference(ref.(Reference))
+		currF.Localvariables[index] = Reference(ref.(Reference))
 	case ReturnAddress:
-		currF.localvariables[index] = ref.(ReturnAddress)
+		currF.Localvariables[index] = ref.(ReturnAddress)
 	}
 }
 func istore(currF *Frame, index uint8) {
 	val := currF.pop()
-	currF.localvariables[index] = val.(int32)
+	currF.Localvariables[index] = val.(int32)
 
 }
 func sstore(currF *Frame, index uint8) {
 	val := currF.pop()
-	currF.localvariables[index] = val.(int16)
+	currF.Localvariables[index] = val.(int16)
 }
 func aastore(currF *Frame) {
 	refval := currF.pop()
@@ -130,9 +129,9 @@ func sastore(currF *Frame) {
 }
 
 func sinc(currF *Frame, index uint8, constant int8) {
-	interm := currF.localvariables[index].(int16)
-	currF.localvariables[index] = interm + int16(constant)
-	fmt.Println("Result ", currF.localvariables[index].(int16))
+	interm := currF.Localvariables[index].(int16)
+	currF.Localvariables[index] = interm + int16(constant)
+	fmt.Println("Result ", currF.Localvariables[index].(int16))
 }
 func popBytecode(currF *Frame) {
 	interm := currF.operandStack[currF.opStackTop]
@@ -340,9 +339,9 @@ func ifnnnull(currF *Frame, branch int8, pPC *int) {
 	}
 }
 func iint(currF *Frame, index uint8, constant int8) {
-	switch currF.localvariables[index].(type) {
+	switch currF.Localvariables[index].(type) {
 	case int32:
-		currF.localvariables[index] = int32(constant)
+		currF.Localvariables[index] = int32(constant)
 	}
 }
 func goTo(currF *Frame, branch int8, pPC *int) {
@@ -450,13 +449,13 @@ func invokeinterface(currF *Frame, pCA *AbstractApplet, vm *VM, nargs uint8, ind
 	interfaceRef := makeU2(pCI.info[1], pCI.info[2])
 	newFrame := &Frame{}
 	newFrame.opStackTop = -1
-	newFrame.localvariables = make([]interface{}, 100)
+	newFrame.Localvariables = make([]interface{}, 100)
 	newFrame.operandStack = make([]interface{}, 100)
 	for i := nargs; i > 0; i-- {
-		newFrame.localvariables[i-1] = currF.pop()
+		newFrame.Localvariables[i-1] = currF.pop()
 	}
 	vm.PushFrame(newFrame)
-	objref := newFrame.localvariables[0].(Reference) //the object reference
+	objref := newFrame.Localvariables[0].(Reference) //the object reference
 	byte1 := uint8((objref & 0xFF00) >> 4)
 	byte2 := uint8(objref & 0x00FF)
 	//todo array type
@@ -550,9 +549,9 @@ func vmNew(currF *Frame, index uint16, pCA *AbstractApplet) {
 	}
 	jcCount++
 	//add in the map between aid and instance references
-	pckg := pCA.PHeader.PThisPackage
-	aid := framework.InitAID(pckg.AID, 0, int16(pckg.AIDLength))
-	instanceRefHeap[aid] = Reference(jcCount)
+	/*	pckg := pCA.PHeader.PThisPackage
+		aid := framework.InitAID(pckg.AID, 0, int16(pckg.AIDLength))
+		InstanceRefHeap[aid] = Reference(jcCount)*/
 
 	//add instance in memory heap
 	heap[Reference(jcCount)] = class
@@ -663,7 +662,7 @@ func anewArray(currF *Frame, index uint16, pCA *AbstractApplet) {
 }
 func getFieldThis(currF *Frame, index uint8, pCA *AbstractApplet) {
 	pCI := pCA.PConstPool.pConstantPool[index]
-	instanceref := currF.localvariables[0].(Reference)
+	instanceref := currF.Localvariables[0].(Reference)
 	class := heap[Reference(instanceref)]
 	switch class.(type) {
 	case *JavaClass:

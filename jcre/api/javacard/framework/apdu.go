@@ -42,7 +42,7 @@ const (
 	StateInitial             = byte(0)
 
 	MaxLE              = int16(128)
-	BufferSize         = 133
+	BufferSize         = 128
 	InvalidGetResponse = int(0xC006)
 	// procedure byte type constants
 	AckNone     = 0

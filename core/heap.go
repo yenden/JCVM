@@ -1,9 +1,5 @@
 package core
 
-import (
-	"JCVM/jcre/api/javacard/framework"
-)
-
 type typeValue uint16
 
 const (
@@ -27,12 +23,12 @@ TypeArrayOfInt       = 0x000D
 TypeArrayOfReference = 0x000E*/
 
 var (
-	javaClassArray  [256]*JavaClass
-	jcCount         = -1
-	heap            = make(map[Reference]interface{})
-	instanceRefHeap = make(map[*framework.AID]Reference)
-	arrcount        = 511
-	interfcount     = 255
+	javaClassArray [256]*JavaClass
+	jcCount        = -1
+	heap           = make(map[Reference]interface{})
+	//InstanceRefHeap = make(map[*framework.AID]Reference)
+	arrcount    = 511
+	interfcount = 255
 	//heap           = make(map[int16]*ArrayValue)
 	//heapClass      = make(map[int16]*JavaClass)
 )
@@ -54,69 +50,22 @@ type instanceField struct {
 	value interface{}
 }
 
-/*
-func allocate(object interface{}, ref int16) {
-	heap[ref] = object
-	switch value := object.(type) {
-	case *ArrayValue:
-		value.allocateArray()
-	case *JavaClass:
-		//createClass()
-	default:
-		//nothing
+//Apdu array for incoming and outgoing apdus
+//It will be called once
+func initApduArr() {
+	array := &ArrayValue{}
+	array.componentType = TypeByte
+	array.length = uint16(128)
+	array.array = make([]interface{}, 128)
+	for i := range array.array {
+		array.array[i] = uint8(0)
 	}
-}
-func (arr *ArrayValue) allocateArray() {
-	if arr.componentType == TypeBoolean {
-		c := make([]bool, arr.length)
-		for i := range c {
-			arr.array[i] = c[i]
-		}
-	}
-	if arr.componentType == TypeByte {
-		c := make([]uint8, arr.length)
-		for i := range c {
-			arr.array[i] = c[i]
-		}
-	}
-	if arr.componentType == TypeShort {
-		c := make([]uint16, arr.length)
-		for i := range c {
-			arr.array[i] = c[i]
-		}
-	}
-	if arr.componentType == TypeInt {
-		c := make([]uint32, arr.length)
-		for i := range c {
-			arr.array[i] = c[i]
-		}
-	}
-	if arr.componentType == TypeReference {
-		c := make(map[uint16]*JavaClass, arr.length)
-		for i := range c {
-			arr.array[i] = c[i]
-		}
-	}
+	heap[Reference(6000)] = array
 }
 
-type ArrayValue struct {
-	componentType typeValue
-	length        uint8
-	array         []interface{}
+func (array *ArrayValue) fillApduArr(apdu []byte) {
+	//array := (heap[Reference(6000)]).(*ArrayValue)
+	for i := range array.array {
+		array.array[i] = apdu[i]
+	}
 }
-type JavaClass struct {
-	superclassref        uint16
-	declaredinstancesize uint8
-	fields               []uint16
-	fieldInit            []bool
-}
-
-func createClass(superclassref uint16, declaredinstancesize uint8) uint16 {
-	fieldtab := make([]uint16, int(declaredinstancesize))
-	fieldinittab := make([]bool, int(declaredinstancesize))
-	jcCount++
-	javaClassArray[jcCount] = &JavaClass{superclassref, declaredinstancesize, fieldtab, fieldinittab}
-	return (uint16(jcCount)) /*+0x100
-}*/
-
-//type Object interface{}
