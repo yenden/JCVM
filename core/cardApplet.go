@@ -76,4 +76,31 @@ func (cl *CardApplet) Install(vm *VM) {
 }
 
 func (cl *CardApplet) Process(vm *VM) {
+	fmt.Println("Start processing...")
+	if cl.PApplet == nil {
+		fmt.Println("Not an applet!")
+		return
+	}
+	instanceclassref := vm.StackFrame[vm.FrameTop].Localvariables[0]
+	instance := heap[instanceclassref.(Reference)]
+	classref := instance.(*JavaClass).classref
+	count := cl.AbsA.PDescriptor.classCount
+	var processMethodOf uint16
+	for i := 0; i < int(count); i++ {
+		if cl.AbsA.PDescriptor.classes[i].thisClassRef == classref {
+			class := cl.AbsA.PDescriptor.classes[i]
+			for j := 0; j < int(class.methodCount); j++ {
+				if class.methods[j].token == 7 {
+					processMethodOf = class.methods[j].methodOffset
+				}
+			}
+			break
+		}
+	}
+	/*if processMethodOf != 7 {
+		fmt.Println("Didn't found process method!")
+		return
+	}*/
+	cl.AbsA.PMethod.executeByteCode(processMethodOf, cl.AbsA, vm, false)
+	fmt.Println("Process finished!")
 }

@@ -1,7 +1,9 @@
 package core
 
 import (
+	"JCVM/jcre/api"
 	"fmt"
+	"reflect"
 )
 
 func aconstNull(currF *Frame) {
@@ -362,6 +364,7 @@ func sreturn(currF *Frame, invokerF *Frame) {
 }
 
 func invokevirtual(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
+	frameworkAID := []byte{0xa0, 0, 0, 0, 0x62, 1, 1}
 	pCI := pCA.PConstPool.pConstantPool[index]
 	byte1 := pCI.info[0]
 	if byte1&0x80 == 0x80 {
@@ -383,6 +386,10 @@ func invokevirtual(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 				newFrame := &Frame{}
 				vm.PushFrame(newFrame)
 				pCL.AbsA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCL.AbsA, vm, true)*/
+		} else if reflect.DeepEqual(pPI.AID, frameworkAID) {
+			classtoken := pCI.info[1]
+			token := pCI.info[2]
+			callFrameWorkFunctions(classtoken, token)
 		} else {
 			fmt.Println("Error: cannot invoke virtual package not found")
 		}
@@ -549,9 +556,10 @@ func vmNew(currF *Frame, index uint16, pCA *AbstractApplet) {
 	}
 	jcCount++
 	//add in the map between aid and instance references
-	/*	pckg := pCA.PHeader.PThisPackage
-		aid := framework.InitAID(pckg.AID, 0, int16(pckg.AIDLength))
-		InstanceRefHeap[aid] = Reference(jcCount)*/
+	pckg := pCA.PHeader.PThisPackage
+	aid := api.InitAID(pckg.AID, 0, int16(pckg.AIDLength))
+	InstanceRefHeap[aid] = Reference(jcCount)
+	fmt.Println(InstanceRefHeap[aid])
 
 	//add instance in memory heap
 	heap[Reference(jcCount)] = class

@@ -1,6 +1,6 @@
-package impl
+package api
 
-import "JCVM/jcre/api/share"
+
 
 /**
  * The PackedBoolean manages booleans in volatile storage
@@ -16,7 +16,7 @@ type PackedBoolean struct {
  */
 func initPackedBoolean(maxbytes byte) *PackedBoolean {
 	pbl := &PackedBoolean{}
-	pbl.container = share.MakeTransientByteArray(int16(maxbytes), share.ClearOnReset)
+	pbl.container =   MakeTransientByteArray(int16(maxbytes),   ClearOnReset)
 	pbl.nextID = 0
 	return pbl
 }

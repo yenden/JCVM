@@ -1,5 +1,7 @@
 package core
 
+import "JCVM/jcre/api"
+
 type typeValue uint16
 
 const (
@@ -23,12 +25,12 @@ TypeArrayOfInt       = 0x000D
 TypeArrayOfReference = 0x000E*/
 
 var (
-	javaClassArray [256]*JavaClass
-	jcCount        = -1
-	heap           = make(map[Reference]interface{})
-	//InstanceRefHeap = make(map[*framework.AID]Reference)
-	arrcount    = 511
-	interfcount = 255
+	javaClassArray  [256]*JavaClass
+	jcCount         = -1
+	heap            = make(map[Reference]interface{})
+	InstanceRefHeap = make(map[*api.AID]Reference)
+	arrcount        = 511
+	interfcount     = 255
 	//heap           = make(map[int16]*ArrayValue)
 	//heapClass      = make(map[int16]*JavaClass)
 )
@@ -52,7 +54,7 @@ type instanceField struct {
 
 //Apdu array for incoming and outgoing apdus
 //It will be called once
-func initApduArr() {
+func InitApduArr() {
 	array := &ArrayValue{}
 	array.componentType = TypeByte
 	array.length = uint16(128)
@@ -63,8 +65,8 @@ func initApduArr() {
 	heap[Reference(6000)] = array
 }
 
-func (array *ArrayValue) fillApduArr(apdu []byte) {
-	//array := (heap[Reference(6000)]).(*ArrayValue)
+func FillApduArr(apdu []byte, ref Reference) {
+	array := (heap[Reference(6000)]).(*ArrayValue)
 	for i := range array.array {
 		array.array[i] = apdu[i]
 	}

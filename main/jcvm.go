@@ -1,5 +1,5 @@
 package main
-
+/*
 import (
 	"JCVM/core"
 	"JCVM/jcre/cadClient"
@@ -14,7 +14,7 @@ func main() {
 	cadClient.LaunchServer()
 }
 
-/*
+
 import "JCVM/core"
 
 func main() {

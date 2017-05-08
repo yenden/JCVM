@@ -1,8 +1,6 @@
 package nativeMethods
 
 import (
-	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"log"
@@ -13,21 +11,22 @@ var (
 	sendRcvCycleStarted = false
 	conn                *net.UDPConn
 	bufferRcv           = make([]byte, 128) //scratch buffer
-	command             = make([]byte, 5)
-	invalidGetResponse  = false
-	LC, LE              byte
-	sw                  int
-	Cond                = false //one outgoing in process?TODO
+	//	command             = make([]byte, 5)
+	invalidGetResponse = false
+	LC, LE             byte
+	sw                 int
+	Cond               = false //one outgoing in process?TODO
+	Addr               *net.UDPAddr
 )
 
-func T0RcvCommand() (int16, error) {
+func T0RcvCommand(command []byte) (int16, error) {
 	if sendRcvCycleStarted {
 		return 0, errors.New("Error: T0RcvCommand has beel already called")
 	}
 	//send receive cycle started
 	//receive apdu and copy its command in command buffer
 	sendRcvCycleStarted = true
-	receive()
+	Addr = receive()
 	copy(command[0:], bufferRcv[0:5])
 	return 0, nil
 }
@@ -57,18 +56,22 @@ func protocolServer() *net.UDPConn {
 func CopyToApdubuffer(apduBuffer []byte, Len int) {
 	copy(apduBuffer[0:Len], bufferRcv[0:Len])
 }
-func receive() {
-	n, err := protocolServer().Read(bufferRcv)
+func receive() *net.UDPAddr {
+	n, addr, err := protocolServer().ReadFromUDP(bufferRcv)
 	if err != nil {
 		log.Fatal(err)
 	}
 	setParam(n)
+	return addr
 }
 func sendStatus(sw int) {
 	if !Cond { //we did'nt have a send in the last process function execution
-		bufsw := new(bytes.Buffer)
-		binary.Write(bufsw, binary.LittleEndian, sw)
-		_, err := protocolServer().Write(bufsw.Bytes())
+		bs := make([]byte, 2)
+		bs[0] = byte(sw >> 8)
+		bs[1] = byte(sw)
+		/*bufsw := new(bytes.Buffer)
+		binary.Write(bufsw, binary.LittleEndian, sw)*/
+		_, err := protocolServer().WriteToUDP(bs, Addr)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -76,9 +79,9 @@ func sendStatus(sw int) {
 
 }
 
-func T0SndStatusRcvCommand() int16 {
+func T0SndStatusRcvCommand(command []byte) int16 {
 	sendStatus(sw)
-	receive()
+	Addr = receive()
 	copy(command[0:], bufferRcv[0:5])
 	return 0
 }
@@ -107,9 +110,9 @@ func setParam(n int) {
 		}
 	}
 }
-func T0RcvData(apduBuffer []byte, offset int16) int16 {
+func T0RcvData(command []byte, apduBuffer []byte, offset int16) int16 {
 	receiveLen := int16(command[4] & 0xFF)
-	copy(apduBuffer[offset:receiveLen], bufferRcv[offset:receiveLen])
+	copy(apduBuffer[0:5], command[0:5])
+	copy(apduBuffer[0:receiveLen], bufferRcv[offset:offset+receiveLen])
 	return receiveLen
-
 }

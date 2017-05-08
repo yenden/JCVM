@@ -1,4 +1,4 @@
-package share
+package api
 
 import (
 	"log"

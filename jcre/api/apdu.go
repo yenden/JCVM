@@ -1,8 +1,6 @@
-package framework
+package api
 
 import (
-	"JCVM/jcre/api/com/sun/javacard/impl"
-	"JCVM/jcre/api/share"
 	"errors"
 	"log"
 )
@@ -62,15 +60,15 @@ const (
 var (
 	incomingFlag, sendInProgressFlag, outgoingFlag byte
 	outgoingLenSetFlag, noGetResponseFlag          byte
-	thePackedBoolean                               *impl.PackedBoolean
+	thePackedBoolean                               PackedBoolean
 )
 
 func initAPDU() *APDU {
 	apdu := &APDU{}
-	/*	apdu.buffer = impl.InitAPDUBuffer()
-		apdu.scratchBuffer = impl.T0InitScratchAPDUBuffer()*/
-	apdu.ramByteVars = share.MakeTransientByteArray(int16(RambyteVarsLength), share.ClearOnReset)
-	apdu.ramShortVars = share.MakeTransientShortArray(int16(RambyteVarsLength), share.ClearOnReset)
+	/*	apdu.buffer =  InitAPDUBuffer()
+		apdu.scratchBuffer =  T0InitScratchAPDUBuffer()*/
+	apdu.ramByteVars =  MakeTransientByteArray(int16(RambyteVarsLength),  ClearOnReset)
+	apdu.ramShortVars =  MakeTransientShortArray(int16(RambyteVarsLength),  ClearOnReset)
 	thePackedBoolean.GetPackedBoolean()
 	incomingFlag = thePackedBoolean.Allocate()
 	sendInProgressFlag = thePackedBoolean.Allocate()
@@ -475,7 +473,7 @@ func resetEnvelopeFlag() {
 	thePackedBoolean.Reset(envelopeFlag)
 }*/
 func (apdu *APDU) SendBytesLong(outData []byte, bOff int16, Len int16) {
-	impl.CheckArrayArgs(outData, bOff, Len)
+	 CheckArrayArgs(outData, bOff, Len)
 	sendLength := int16(len(apdu.buffer))
 	for Len > 0 {
 		if Len < sendLength {
