@@ -36,7 +36,7 @@ func isAbstract(flag uint8) bool {
 	return (flag & 0x40) == 0x40
 }
 
-func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet, vm *VM, Invokercond bool) {
+func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet, vm *VM, invokercond bool, processCond bool) {
 	iPosm2 := int(offset - 1)
 	flags := readU1(mComp.pMethodInfo, &iPosm2)
 	currFrame := vm.StackFrame[vm.FrameTop]
@@ -53,10 +53,12 @@ func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet
 		maxLocals = readLow(bitField)
 	}
 	fmt.Println("max stack", maxStack, "maxlocal", maxLocals)
-	currFrame.opStackTop = -1
-	currFrame.Localvariables = make([]interface{}, 256)
+	if !processCond {
+		currFrame.opStackTop = -1
+		currFrame.Localvariables = make([]interface{}, 256)
+	}
 	currFrame.operandStack = make([]interface{}, 256)
-	if Invokercond == true {
+	if invokercond == true {
 		invokerframe := vm.StackFrame[vm.FrameTop-1]
 		for i := nargs; i > 0; i-- {
 			currFrame.Localvariables[i-1] = invokerframe.pop()
