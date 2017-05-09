@@ -18,10 +18,8 @@ type AbstractApplet struct {
 }
 
 func (abs *AbstractApplet) isThisLibrary(pPI *PackageInfo) bool {
-	/*minV := abs.PHeader.pThisPackage.MinorVersion
-	majV := abs.PHeader.pThisPackage.MajorVersion*/
 	aidL := abs.PHeader.PThisPackage.AIDLength
-	if /*minV == pPI.MinorVersion && majV == pPI.MajorVersion &&*/ aidL == pPI.AIDLength {
+	if aidL == pPI.AIDLength {
 		for i := 0; i < int(aidL); i++ {
 			if abs.PHeader.PThisPackage.AID[i] != pPI.AID[i] {
 				return false
@@ -71,7 +69,7 @@ func (cl *CardApplet) Install(vm *VM) {
 	}
 	fmt.Printf("Install command from %d\r\n", int(cl.PApplet.applets[0].installMethodOffset))
 	offset := uint16(cl.PApplet.applets[0].installMethodOffset)
-	cl.AbsA.PMethod.executeByteCode(offset, cl.AbsA, vm, false)
+	cl.AbsA.PMethod.executeByteCode(offset, cl.AbsA, vm, false, false)
 	fmt.Println("Install finished!")
 }
 
@@ -101,6 +99,6 @@ func (cl *CardApplet) Process(vm *VM) {
 		fmt.Println("Didn't found process method!")
 		return
 	}*/
-	cl.AbsA.PMethod.executeByteCode(processMethodOf, cl.AbsA, vm, false)
+	cl.AbsA.PMethod.executeByteCode(processMethodOf, cl.AbsA, vm, false, true)
 	fmt.Println("Process finished!")
 }
