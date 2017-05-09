@@ -2,7 +2,7 @@ package cadClient
 
 import (
 	"JCVM/core"
-	"JCVM/jcre/api/javacard/framework"
+	"JCVM/jcre/api"
 	"fmt"
 	"log"
 	"net"
@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	appletTab          = make(map[*framework.AID]*core.CardApplet)
-	currentSelectedApp *framework.AID
+	appletTab          = make(map[*api.AID]*core.CardApplet)
+	currentSelectedApp *api.AID
 )
 
 func LaunchServer() {
@@ -66,7 +66,7 @@ func handleAPDU(conn *net.UDPConn) {
 				appletBuffer := core.ReadInBuffer(abspath)
 				capp := core.BuildApplet(appletBuffer)
 				aidbytes := capp.AbsA.PHeader.PThisPackage.AID
-				aid := framework.InitAID(aidbytes, 0, int16(len(aidbytes)))
+				aid := api.InitAID(aidbytes, 0, int16(len(aidbytes)))
 				appletTab[aid] = capp
 				vm := initVM()
 				capp.Install(vm)
@@ -81,7 +81,7 @@ func handleAPDU(conn *net.UDPConn) {
 
 		case 0x02: //if it is a select applet command
 			aidBytes := buffer[5:n]
-			aid := framework.InitAID(aidBytes, 0, int16(len(aidBytes)))
+			aid := api.InitAID(aidBytes, 0, int16(len(aidBytes)))
 			if !appletExists(aid) {
 				log.Println("Error : this applet doesn't exists")
 				response[0] = 0x55
@@ -124,7 +124,7 @@ func initVM() *core.VM {
 	vm.PushFrame(f)
 	return vm
 }
-func appletExists(aid *framework.AID) bool {
+func appletExists(aid *api.AID) bool {
 	for searchAaid, _ := range appletTab {
 		if reflect.DeepEqual(aid, searchAaid) {
 			return true
@@ -132,7 +132,7 @@ func appletExists(aid *framework.AID) bool {
 	}
 	return false
 }
-func setCurrentlySelectedApp(aid *framework.AID) {
+func setCurrentlySelectedApp(aid *api.AID) {
 	currentSelectedApp = aid
 	//log.Println("Currently selected applet", currentSelectedApp)
 }
