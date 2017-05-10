@@ -335,8 +335,8 @@ func BuildApplet(dataBuffer []byte) *CardApplet {
 		pArrayInit,
 		defaultValueCount,
 		nnvalcount,
-		pNonDefaultValues}
-
+		pNonDefaultValues, nil}
+	ipStaticField.buildStaticFieldImage()
 	/*Parse method component*/
 	var iPosm int
 	handlerCount := readU1(pMethodComponent, &iPosm)
