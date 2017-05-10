@@ -19,6 +19,14 @@ type VM struct {
 	FrameTop   int
 }
 
+var (
+	status = uint16(1)
+)
+
+func GetStatus() uint16 {
+	return status
+}
+
 /****Push functions****/
 
 func (frame *Frame) push(value interface{}) bool {
@@ -319,6 +327,9 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x90:
 			atype := readU1(pByteCode, pPC)
 			newArray(currentFrame, atype)
+		case 0x93:
+			athrow(currentFrame)
+			return
 		case 0xAD:
 			indexad := readU1(pByteCode, pPC)
 			getFieldThis(currentFrame, indexad, pCA)

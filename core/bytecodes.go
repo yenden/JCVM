@@ -756,8 +756,45 @@ func putfield(currF *Frame, index uint8, pCA *AbstractApplet) {
 	}
 }
 func athrow(currF *Frame) {
+	status = uint16(currF.Localvariables[1].(int16))
+	return
+}
+func callFrameworkMethods(classtoken uint8, methodToken uint8) {
+	if methodToken == 0 {
+		return
+	}
+	switch classtoken {
+	case 3: //Class Applet
+		if methodToken == 1 { //register method
+
+		} else if methodToken == 3 { //selectingApplet Method
+
+		}
+	case 16: //Class Util
+		if methodToken == 2 { //ArraycopynonAtomic
+
+		}
+
+	case 10:
+		switch methodToken {
+		case 1: //getBuffer
+		case 3: //receiveBytes
+		case 4: //sendBytes
+		case 5: //sendBytesLong
+		case 6: //setIncomingAndReceive
+		case 7: //setOutgoing
+		case 8: //setOutgoingAndSend
+		case 9: //setOutgoingLength
+		default:
+			//nothing
+			return
+		}
+
+	}
 
 }
+
+//TODO getstatic and athrow bytecode
 
 /*
 *****Byte code verification for later*****
@@ -799,39 +836,3 @@ func verifyInvokeVirtual(index uint16, pCA *AbstractApplet) bool {
 	}
 }
 */
-func callFrameworkMethods(classtoken uint8, methodToken uint8) {
-	if methodToken == 0 {
-		return
-	}
-	switch classtoken {
-	case 3: //Class Applet
-		if methodToken == 1 { //register method
-
-		} else if methodToken == 3 { //selectingApplet Method
-
-		}
-	case 16: //Class Util
-		if methodToken == 2 { //ArraycopynonAtomic
-
-		}
-
-	case 10:
-		switch methodToken {
-		case 1: //getBuffer
-		case 3: //receiveBytes
-		case 4: //sendBytes
-		case 5: //sendBytesLong
-		case 6: //setIncomingAndReceive
-		case 7: //setOutgoing
-		case 8: //setOutgoingAndSend
-		case 9: //setOutgoingLength
-		default:
-			//nothing
-			return
-		}
-
-	}
-
-}
-
-//TODO getstatic and athrow bytecode
