@@ -1,4 +1,4 @@
-package cadClient
+package share
 
 import (
 	"JCVM/core"

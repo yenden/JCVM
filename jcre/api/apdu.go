@@ -1,14 +1,12 @@
 package api
 
+/*
 import (
 	"errors"
 	"log"
 )
 
 type APDU struct {
-	/**
-	 * The APDU will use the buffer byte[] to store data for input and output.
-	 */
 	buffer []byte
 	//scrach buffer to receive incoming data
 	scratchBuffer []byte
@@ -65,10 +63,10 @@ var (
 
 func initAPDU() *APDU {
 	apdu := &APDU{}
-	/*	apdu.buffer =  InitAPDUBuffer()
-		apdu.scratchBuffer =  T0InitScratchAPDUBuffer()*/
-	apdu.ramByteVars =  MakeTransientByteArray(int16(RambyteVarsLength),  ClearOnReset)
-	apdu.ramShortVars =  MakeTransientShortArray(int16(RambyteVarsLength),  ClearOnReset)
+		apdu.buffer =  InitAPDUBuffer()
+		apdu.scratchBuffer =  T0InitScratchAPDUBuffer()
+	apdu.ramByteVars = MakeTransientByteArray(int16(RambyteVarsLength), ClearOnReset)
+	apdu.ramShortVars = MakeTransientShortArray(int16(RambyteVarsLength), ClearOnReset)
 	thePackedBoolean.GetPackedBoolean()
 	incomingFlag = thePackedBoolean.Allocate()
 	sendInProgressFlag = thePackedBoolean.Allocate()
@@ -352,42 +350,11 @@ func (apdu *APDU) ReceiveBytes(bOff int16) (int16, error) {
 		if Len < 0 {
 			return 0, errors.New("Error input/output in receivebytes")
 		}
-		/*	} else {
-			// Envelope case - call t0RcvData first
-			Len = 0 // NativeMethods.t0RcvData(bOff);
-
-			if Len < 0 {
-				return 0, errors.New("Error input/output in receivebytes")
-			}
-			if Len == 0 {
-				// Envelope case - retrieve next ENVELOPE APDU if needed
-				// NativeMethods.t0SetStatus((short) 0x9000);
-				//NativeMethods.t0SndStatusRcvCommand()
-				// verify that data is properly received in an
-				// Envelope command
-				Len, err = apdu.processEnvelopeData(bOff)
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-		}*/
 
 		// Move from scratch buffer to APDU buffer
 		//NativeMethods.t0CopyToAPDUBuffer(bOff, len)
 		Lc = Lc - Len
-		/*if Lc < 0 {
-			if Lc == -1 {
-				// Partially received LE
-				Lc = 0
-				Len = Len - 1
-				setDeterminedLEFlag()
-			} else {
-				Lc = 0
-				Len = Len - 2
-				setDeterminedLEFlag()
-				resetEnvelopeFlag()
-			}
-		}*/
+
 		apdu.setLc(Lc) // update RAM copy of Lc, the count remaining
 		if Lc == 0 {
 			apdu.setCurrentState(StateFullIncoming)
@@ -395,35 +362,7 @@ func (apdu *APDU) ReceiveBytes(bOff int16) (int16, error) {
 			apdu.setCurrentState(StatePartialIncoming)
 		}
 		return Len, nil
-	} /*else {
-		// This is the case where LE is missing one byte
-		if getEnvelopeFlag() && getDeterminedLEFlag() {
-			Len = 0 //NativeMethods.t0RcvData(bOff);
-			if Len < 0 {
-				return 0, errors.New("Error input/output in receivebytes")
-			}
-
-			if Len == 0 {
-				// Envelope case
-				//  Util.arrayFillNonAtomic(buffer, (short) 0, BUFFERSIZE, (byte) 0);
-				//   NativeMethods.t0SetStatus((short) 0x9000);
-				//     NativeMethods.t0SndStatusRcvCommand();
-				// verify that data is properly received in an
-				// Envelope command if it is not...
-				Len, err = apdu.processEnvelopeData(bOff)
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-
-			// Copy data to APDU buffer
-			// NativeMethods.t0CopyToAPDUBuffer(bOff, len);
-			// Process that one byte LE
-			// comment out for bugfix No LE in T=0 Extended TPDU
-			// setLe((short) (getLe() | ((buffer[(short) (bOff + len - (short) 1)] & (short) 0x00FF))));
-			resetEnvelopeFlag()
-		}
-	}*/
+	}
 	apdu.setCurrentState(StateFullIncoming)
 	return 0, nil
 }
@@ -442,8 +381,8 @@ func getDeterminedLEFlag() bool {
 }
 func getEnvelopeFlag() bool {
 	return thePackedBoolean.Get(envelopeFlag)
-}*/
-/*
+}
+
 func (apdu *APDU) processEnvelopeData(bOffset int16) (int16, error) {
 	// This method is called when an ENVELOPE command is expected
 	// in order to retrieve its payload.
@@ -467,13 +406,13 @@ func isISOInterindustryCLA(aBuffer []byte) bool {
 		return true
 	}
 	return false
-}*/
-/*
+}
+
 func resetEnvelopeFlag() {
 	thePackedBoolean.Reset(envelopeFlag)
-}*/
+}*/ /*
 func (apdu *APDU) SendBytesLong(outData []byte, bOff int16, Len int16) {
-	 CheckArrayArgs(outData, bOff, Len)
+	CheckArrayArgs(outData, bOff, Len)
 	sendLength := int16(len(apdu.buffer))
 	for Len > 0 {
 		if Len < sendLength {
@@ -580,3 +519,4 @@ func isType16CLA(aBuffer []byte) bool {
 	}
 	return false
 }
+*/

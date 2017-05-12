@@ -20,11 +20,15 @@ type VM struct {
 }
 
 var (
-	status = uint16(1)
+	status  = uint16(0x9000)
+	leaveVM = false
 )
 
 func GetStatus() uint16 {
 	return status
+}
+func SetStatus(st uint16) {
+	status = st
 }
 
 /****Push functions****/
@@ -76,7 +80,8 @@ func (vm *VM) popFrame() *Frame {
 
 func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params uint8) {
 	currentFrame := vm.StackFrame[vm.FrameTop]
-	for {
+	leaveVM = false
+	for !leaveVM {
 		bytecode := int(readU1(pByteCode, pPC))
 		switch bytecode {
 		case 0x0:
@@ -295,6 +300,33 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x7A:
 			vm.popFrame()
 			return
+
+		case 0x7B: //getstatic_a
+			value := readU2(pByteCode, pPC)
+			getstatic(currentFrame, value, pCA, 0x7B)
+		case 0x7C: //getstatic_b
+			value := readU2(pByteCode, pPC)
+			getstatic(currentFrame, value, pCA, 0x7C)
+		case 0x7D: //getstatic_s
+			value := readU2(pByteCode, pPC)
+			getstatic(currentFrame, value, pCA, 0x7D)
+		case 0x7E: //getstatic_i
+			value := readU2(pByteCode, pPC)
+			getstatic(currentFrame, value, pCA, 0x7E)
+
+		case 0x7F: //putstatic_a
+			value := readU2(pByteCode, pPC)
+			putstatic(currentFrame, value, pCA, 0x7F)
+		case 0x80: //putstatic_b
+			value := readU2(pByteCode, pPC)
+			putstatic(currentFrame, value, pCA, 0x80)
+		case 0x81: //putstatic_s
+			value := readU2(pByteCode, pPC)
+			putstatic(currentFrame, value, pCA, 0x81)
+		case 0x82: //puttstatic_i
+			value := readU2(pByteCode, pPC)
+			putstatic(currentFrame, value, pCA, 0x82)
+
 		case 0x87:
 			index7 := readU1(pByteCode, pPC)
 			putfield(currentFrame, index7, pCA)

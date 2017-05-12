@@ -26,7 +26,6 @@ type StaticFieldComponent struct {
 	sfc.pNonDefaultValues = make([]uint8, nondefaultvaluecount)
 }*/
 func (sfc *StaticFieldComponent) buildStaticFieldImage() {
-	refccount := sfc.referenceCount
 	sfc.pStaticFieldImage = make([]uint8, sfc.imageSize)
 	//Build segment 1 and segment 2 data.
 	//Segment 1 - arrays of primitive types initialized by <clinit> methods.

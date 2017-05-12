@@ -1,31 +1,32 @@
 package jcre
 
-/*
 import (
 	"JCVM/core"
 	"JCVM/jcre/api"
 	"JCVM/jcre/nativeMethods"
+	"fmt"
 	"reflect"
 )
 
 var (
-	isCardInitFlag     = false
-	AppletTable        = make(map[*api.AID]*core.CardApplet)
+	//flag to dertermine the first init
+	isCardInitFlag = false
+	//current selected applet aid
 	currSelectedApplet = &api.AID{}
-	processMethodFlag  = false
-	TheApdu            *api.Apdu
+	//TheApdu Represent the apdu buffer
+	TheApdu *api.Apdu
 )
 
 func MainLoop() {
-	if !isCardInitFlag {
-		cardInit() // card initialization (first time only)
-	}
-	cardReset() // session initialization (each card reset)
+	/*if !isCardInitFlag {
+	cardInit() // card initialization (first time only)
+		}*/
+	cardInit() // card initialization (first time only)
+	//cardReset() // session initialization (each card reset)
 	sw := uint16(0)
 	// main loop
 	for {
 		resetSelectingAppletFlag()
-		resetProcessMethodFlag()
 		TheApdu.Complete(sw) // respond to previous APDU and get next
 		// Process channel information
 		if processAndForward() { // Dispatcher handles the SELECT
@@ -33,7 +34,7 @@ func MainLoop() {
 			// dispatch to the currently selected applet
 			//selectedApplet := AppletTable[currSelectedApplet]
 			var selectedApplet *core.CardApplet
-			for j, val := range AppletTable {
+			for j, val := range core.AppletTable {
 				if reflect.DeepEqual(j, currSelectedApplet) {
 					selectedApplet = val
 				}
@@ -44,9 +45,12 @@ func MainLoop() {
 	}
 }
 func processAndForward() bool {
-	switch TheApdu.Command[api.OffsetIns] {
+	switch TheApdu.Buffer[api.OffsetIns] {
 	case api.InsSelect: // ISO 7816-4 SELECT FIlE command
 		selectApdu(TheApdu)
+	case api.InsInstall: //install command
+		install()
+		return false
 	default:
 		//nothing .... We don't support manage channel command
 	}
@@ -54,34 +58,41 @@ func processAndForward() bool {
 
 }
 func selectApdu(apdu *api.Apdu) {
-	Len := nativeMethods.T0RcvData(apdu.Command, apdu.Buffer, 5)
-	if Len == int16(apdu.Command[4]) {
-		aidBytes := apdu.Buffer[0:Len]
+	Len := nativeMethods.T0RcvData(apdu.Buffer, 5)
+	if Len == int16(apdu.Buffer[4]) {
+		aidBytes := apdu.Buffer[5 : 5+Len]
 		currSelectedApplet = api.InitAID(aidBytes, 0, int16(len(aidBytes)))
+		fmt.Println(currSelectedApplet)
 	}
 	setSelectingAppletFlag()
+}
+
+func install() {
+	vm := initVM()
+	core.ConstantApplet.Install(vm)
 }
 
 // This function is call the first time we init the card
 //It installs all the existing applets in appletTable
 func cardInit() {
-	for i := range AppletTable {
+	/*for i := range core.AppletTable {
 		vm := initVM()
-		capp := AppletTable[i]
+		capp := core.AppletTable[i]
 		capp.Install(vm)
 	}
-
+	*/
 	TheApdu = &api.Apdu{}
-	TheApdu.Buffer = make([]byte, 128-5)
-	TheApdu.Command = make([]byte, 5)
+	TheApdu.Buffer = make([]byte, 37)
 	currSelectedApplet.TheAID = []byte{0, 0, 0, 0, 0, 0}
 	core.InitApduArr()
 	isCardInitFlag = true
 }
+
+/*
 func cardReset() {
-	currSelectedApplet = &api.AID{}
+
 	currSelectedApplet.TheAID = []byte{0, 0, 0, 0, 0, 0}
-}
+}*/
 func resetSelectingAppletFlag() {
 	api.SelectingAppletFlag = false
 }
@@ -89,12 +100,6 @@ func setSelectingAppletFlag() {
 	api.SelectingAppletFlag = true
 }
 
-func resetProcessMethodFlag() {
-	processMethodFlag = false
-}
-func setProcessMethodFlag() {
-	processMethodFlag = true
-}
 func initVM() *core.VM {
 	vm := &core.VM{}
 	vm.FrameTop = -1
@@ -105,11 +110,9 @@ func initVM() *core.VM {
 }
 func initProcess() *core.VM {
 	vm := initVM()
-	apduBuff := append(TheApdu.Command, TheApdu.Buffer...)
-	core.FillApduArr(apduBuff, core.Reference(6000))
-	vm.StackFrame[vm.FrameTop].Localvariables = make([]interface{}, 256)
+	//core.FillApduArr(TheApdu.Buffer, core.Reference(6000))
+	vm.StackFrame[vm.FrameTop].Localvariables = make([]interface{}, 30)
 	vm.StackFrame[vm.FrameTop].Localvariables[0] = core.InstanceRefHeap[currSelectedApplet]
 	vm.StackFrame[vm.FrameTop].Localvariables[1] = core.Reference(6000)
 	return vm
 }
-*/

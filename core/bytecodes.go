@@ -2,12 +2,39 @@ package core
 
 import (
 	"JCVM/jcre/api"
+	"JCVM/jcre/nativeMethods"
+	"errors"
 	"fmt"
 	"reflect"
 )
 
 var (
-	ownerPinMap = map[uint8]uint8{0: 0, 1: 4, 2: 3, 3: 1, 4: 5, 5: 6, 6: 8, 7: 2, 8: 7}
+	ownerPinMap  = map[uint8]uint8{0: 0, 1: 4, 2: 3, 3: 1, 4: 5, 5: 6, 6: 8, 7: 2, 8: 7}
+	frameworkAID = []byte{0xa0, 0, 0, 0, 0x62, 1, 1}
+)
+
+const (
+	ownerpinClass         = 9
+	check                 = 1
+	isValidated           = 4
+	resetAndUnblock       = 6
+	update                = 8
+	applet                = 3
+	register              = 1
+	selectingApplet       = 3
+	util                  = 16
+	arraycopynonAtomic    = 2
+	apdu                  = 10
+	getbuffer             = 1
+	receiveBytes          = 3
+	sendBytes             = 4
+	sendBytesLong         = 5
+	setIncomingAndReceive = 6
+	setOutgoing           = 7
+	setOutgoingAndSend    = 8
+	setOutgoingLength     = 9
+	isoException          = 7
+	throwit               = 1
 )
 
 func aconstNull(currF *Frame) {
@@ -50,8 +77,8 @@ func aaload(currF *Frame) {
 	switch value := heap[arrayref.(Reference)].(type) { // the reference point to an array
 	case *ArrayValue:
 		if value.componentType == TypeReference {
-			c := value.array[index.(int16)]
-			currF.push(c.(Reference))
+			c := value.array.([]Reference)[index.(int16)]
+			currF.push(c)
 		}
 	}
 }
@@ -61,8 +88,8 @@ func baload(currF *Frame) {
 	switch value := heap[arrayref.(Reference)].(type) {
 	case *ArrayValue: // the reference point to an array
 		if value.componentType == TypeByte || value.componentType == TypeBoolean {
-			c := value.array[index.(int16)]
-			currF.push(int16(c.(int8)))
+			c := value.array.([]byte)[index.(int16)]
+			currF.push(int16(c))
 		}
 	}
 
@@ -73,8 +100,8 @@ func saload(currF *Frame) {
 	switch value := heap[arrayref.(Reference)].(type) {
 	case *ArrayValue: // the reference point to an array
 		if value.componentType == TypeShort {
-			c := value.array[index.(int16)]
-			currF.push(c.(int16))
+			c := value.array.([]int16)[index.(int16)]
+			currF.push(c)
 		}
 	}
 }
@@ -103,7 +130,7 @@ func aastore(currF *Frame) {
 	switch value := heap[arrayref.(Reference)].(type) {
 	case *ArrayValue: // the reference point to an array
 		if value.componentType == TypeReference { //an array of reference
-			value.array[index.(int16)] = refval.(Reference)
+			value.array.([]Reference)[index.(int16)] = refval.(Reference)
 		}
 
 	}
@@ -115,7 +142,7 @@ func bastore(currF *Frame) {
 	switch value := heap[arrayref.(Reference)].(type) {
 	case *ArrayValue: // the reference point to an array
 		if value.componentType == TypeByte || value.componentType == TypeBoolean { //an array of byte or boolean
-			value.array[index.(int16)] = int8(refval.(int16))
+			value.array.([]byte)[index.(int16)] = uint8(refval.(int16))
 		}
 	}
 }
@@ -127,7 +154,7 @@ func sastore(currF *Frame) {
 	switch value := heap[arrayref.(Reference)].(type) {
 	case *ArrayValue: // the reference point to an array
 		if value.componentType == TypeShort { //an array of byte or boolean
-			value.array[index.(int16)] = refval.(int16)
+			value.array.([]int16)[index.(int16)] = refval.(int16)
 		}
 
 	}
@@ -368,48 +395,34 @@ func sreturn(currF *Frame, invokerF *Frame) {
 }
 
 func invokevirtual(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
-	frameworkAID := []byte{0xa0, 0, 0, 0, 0x62, 1, 1}
+
 	pCI := pCA.PConstPool.pConstantPool[index]
 	byte1 := pCI.info[0]
 	if byte1&0x80 == 0x80 {
 		packageIndex := byte1 & 0x7F
 		pPI := pCA.PImport.packages[packageIndex]
 		pCL := findLibrary(pPI)
-
-		if pCL != nil { //External library
+		var classtoken, token uint8
+		if pCL != nil {
 			//External library which is not framework
-			if !reflect.DeepEqual(pPI.AID, frameworkAID) {
-				classtoken := pCI.info[1]
-				sOffset := pCL.AbsA.PExport.pClassExport[classtoken].pStaticMethodOffsets[pCI.info[2]]
-				newFrame := &Frame{}
-				vm.PushFrame(newFrame)
-				pCL.AbsA.PMethod.executeByteCode(sOffset, pCL.AbsA, vm, true, false)
-
-			} else if reflect.DeepEqual(pPI.AID, frameworkAID) && pCI.info[1] == 9 {
-				//Class OwnerPIN of package framework
-				classtoken := 1
-				methodToken := ownerPinMap[pCI.info[2]]
-				sOffset := pCL.AbsA.PExport.pClassExport[classtoken].pStaticMethodOffsets[methodToken]
-				newFrame := &Frame{}
-				vm.PushFrame(newFrame)
-				pCL.AbsA.PMethod.executeByteCode(sOffset, pCL.AbsA, vm, true, false)
+			classtoken = pCI.info[1]
+			token = pCI.info[2]
+			sOffset := pCL.AbsA.PExport.pClassExport[classtoken].classOffset
+			pcLInf := pCL.AbsA.PClass.pClasses[sOffset]
+			index2 := token - pcLInf.publicMethodTableBase
+			newFrame := &Frame{}
+			vm.PushFrame(newFrame)
+			pCL.AbsA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCL.AbsA, vm, true, false)
+		} else {
+			if reflect.DeepEqual(pPI.AID, frameworkAID) { //classes of package framework
+				classtoken = pCI.info[1]
+				token = pCI.info[2]
+				//call appropriate virtual method
+				callFrameworkMethods(vm, classtoken, token)
 			} else {
-				//other classes of package framework
-				classtoken := pCI.info[1]
-				methodToken := pCI.info[2]
-				callFrameworkMethods(classtoken, methodToken)
+				fmt.Println("Error: cannot invoke virtual package not found")
 			}
 
-			/*	classtoken := pCI.info[1]
-				sOffset := pCL.AbsA.PExport.pClassExport[classtoken].classOffset
-				pcLInf := pCL.AbsA.PClass.pClasses[sOffset]
-				token := pCI.info[2]
-				index2 := token - pcLInf.publicMethodTableBase
-				newFrame := &Frame{}
-				vm.PushFrame(newFrame)
-				pCL.AbsA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCL.AbsA, vm, true)*/
-		} else {
-			fmt.Println("Error: cannot invoke virtual package not found")
 		}
 
 	} else { //Interal class library
@@ -418,10 +431,10 @@ func invokevirtual(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 		pcLInf := pCA.PClass.pClasses[offset-2]
 		newFrame := &Frame{}
 		vm.PushFrame(newFrame)
-		if token&0x80 == 0x80 {
+		if token&0x80 == 0x80 { //call private method
 			index2 := token - pcLInf.packageMethodTableBase
 			pCA.PMethod.executeByteCode(pcLInf.packageVirtualMethodTable[index2], pCA, vm, true, false)
-		} else {
+		} else { //call public method
 			index2 := token - pcLInf.publicMethodTableBase
 			pCA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCA, vm, true, false)
 		}
@@ -432,7 +445,7 @@ func invokespecial(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 	pCI := pCA.PConstPool.pConstantPool[index]
 	byte1 := pCI.info[0]
 	if pCI.tag == 0x06 { //static method
-		if byte1 == 0x00 {
+		if byte1 == 0x00 { //package internal method
 			sOffset := makeU2(pCI.info[1], pCI.info[2])
 			newFrame := &Frame{}
 			vm.PushFrame(newFrame)
@@ -442,23 +455,22 @@ func invokespecial(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 			pPI := pCA.PImport.packages[packageIndex]
 			pCL := findLibrary(pPI)
 			if pCL != nil {
-				//External library
+				//External library, call external static method
 				classtoken := pCI.info[1]
 				sOffset := pCL.AbsA.PExport.pClassExport[classtoken].pStaticMethodOffsets[pCI.info[2]]
 				newFrame := &Frame{}
 				vm.PushFrame(newFrame)
 				pCL.AbsA.PMethod.executeByteCode(sOffset, pCL.AbsA, vm, true, false)
-				/*
-					sOffset := pCL.AbsA.PExport.pClassExport[classtoken].classOffset
-					pcLInf := pCL.AbsA.PClass.pClasses[sOffset]
-					token := pCI.info[2]
-					index2 := token - pcLInf.publicMethodTableBase
-					newFrame := &Frame{}
-					vm.PushFrame(newFrame)
-					pCL.AbsA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCL.AbsA, vm, true)
-				*/
 			} else {
-				fmt.Println("Error: cannot invoke special package not found")
+				if reflect.DeepEqual(pPI.AID, frameworkAID) { //classes of package framework
+					classtoken := pCI.info[1]
+					token := pCI.info[2]
+					//call appropriate virtual method
+					callFrameworkMethods(vm, classtoken, token)
+				} else {
+					fmt.Println("Error: cannot invoke special package not found")
+				}
+
 			}
 		}
 	}
@@ -563,6 +575,10 @@ func vmNew(currF *Frame, index uint16, pCA *AbstractApplet) {
 			sOffset := pCL.AbsA.PExport.pClassExport[classtoken].classOffset
 			class = createClassInstance(classtoken, sOffset, pCL.AbsA)
 		} else {
+			if reflect.DeepEqual(pPI.AID, frameworkAID) { //classes of package framework
+				classtoken := pCI.info[1]
+				createFrameworkClass(currF, classtoken)
+			}
 			fmt.Println("Error: cannot create class package not found")
 		}
 	} else {
@@ -643,34 +659,22 @@ func newArray(currF *Frame, atype uint8) {
 		//boolean
 		array.componentType = TypeBoolean
 		array.length = uint16(count)
-		array.array = make([]interface{}, count)
-		for i := range array.array {
-			array.array[i] = uint8(0)
-		}
+		array.array = make([]uint8, count)
 	case 11:
 		//byte
 		array.componentType = TypeByte
 		array.length = uint16(count)
-		array.array = make([]interface{}, count)
-		for i := range array.array {
-			array.array[i] = uint8(0)
-		}
+		array.array = make([]byte, count)
 	case 12:
 		//short
 		array.componentType = TypeShort
 		array.length = uint16(count)
-		array.array = make([]interface{}, count)
-		for i := range array.array {
-			array.array[i] = int16(0)
-		}
+		array.array = make([]int16, count)
 	case 13:
 		//int
 		array.componentType = TypeInt
 		array.length = uint16(count)
-		array.array = make([]interface{}, count)
-		for i := range array.array {
-			array.array[i] = int32(0)
-		}
+		array.array = make([]int32, count)
 	}
 	heap[Reference(arrcount+1)] = array
 	currF.push(Reference(arrcount + 1))
@@ -755,84 +759,292 @@ func putfield(currF *Frame, index uint8, pCA *AbstractApplet) {
 		}
 	}
 }
-func athrow(currF *Frame) {
+func athrow(currF *Frame) { //TODO
 	status = uint16(currF.Localvariables[1].(int16))
 	return
 }
-func callFrameworkMethods(classtoken uint8, methodToken uint8) {
-	if methodToken == 0 {
+func getstatic(currF *Frame, index uint16, pCA *AbstractApplet, ins int) {
+	offset, err := getstaticfieldAddress(index, pCA)
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
+	switch ins {
+	case 0x7B:
+		value := readU2(pCA.PStaticField.pStaticFieldImage, &offset)
+		currF.push(Reference(value))
+	case 0x7C:
+		value := pCA.PStaticField.pStaticFieldImage[offset]
+		currF.push(int16(value))
+	case 0x7D:
+		value := readU2(pCA.PStaticField.pStaticFieldImage, &offset)
+		currF.push(int16(value))
+	case 0x7E:
+		value := readU4(pCA.PStaticField.pStaticFieldImage, &offset)
+		currF.push(int32(value))
+	}
+}
+
+func getstaticfieldAddress(index uint16, pCA *AbstractApplet) (int, error) {
+	pCI := pCA.PConstPool.pConstantPool[index]
+	byte1 := pCI.info[0]
+	offset := makeU2(pCI.info[1], pCI.info[2])
+	if byte1 == 0 {
+		//It is an internal static field.
+		return int(offset), nil
+
+	}
+	return 0, errors.New("Error getstatic on external address")
+}
+func putstatic(currF *Frame, index uint16, pCA *AbstractApplet, ins int) {
+	offset, err := getstaticfieldAddress(index, pCA)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	switch ins {
+	case 0x7F:
+		value := currF.pop().(Reference)
+		pCA.PStaticField.pStaticFieldImage[offset] = uint8(value / 0x100)
+		pCA.PStaticField.pStaticFieldImage[offset+1] = uint8(value % 0x100)
+	case 0x80:
+		value := currF.pop().(uint8)
+		pCA.PStaticField.pStaticFieldImage[offset] = value
+	case 0x81:
+		value := currF.pop().(int16)
+		pCA.PStaticField.pStaticFieldImage[offset] = uint8(value / 0x100)
+		pCA.PStaticField.pStaticFieldImage[offset+1] = uint8(value % 0x100)
+	case 0x82:
+		//TODO
+		/*value := currF.pop().(int16)
+		pCA.PStaticField.pStaticFieldImage[offset] = uint8(value / 0x100)
+		pCA.PStaticField.pStaticFieldImage[offset+1] = uint8(value % 0x100)
+		pCA.PStaticField.pStaticFieldImage[offset+2] = uint8(value / 0x100)
+		pCA.PStaticField.pStaticFieldImage[offset+3] = uint8(value % 0x100)*/
+	}
+}
+func callselectingApplet(currF *Frame) {
+	_ = currF.pop()
+	cond := api.GetSelectingAppletFlag()
+	if cond {
+		currF.push(int16(1)) //push true
+	} else {
+		currF.push(int16(0)) //push false
+	}
+}
+func callArraycopynonAtomic(currF *Frame) {
+	length := currF.pop().(int16)
+	destOffset := currF.pop().(int16)
+	destArr := heap[currF.pop().(Reference)].(*ArrayValue)
+	srcOffset := currF.pop().(int16)
+	srcArr := heap[currF.pop().(Reference)].(*ArrayValue)
+	result := api.ArrayCopyNonAtomic(srcArr.array, srcOffset, destArr.array, destOffset, length)
+	currF.push(result)
+}
+func callOwnerPINInit(currF *Frame) {
+	maxPINSize := currF.pop().(int16)
+	tryLimit := currF.pop().(int16)
+	ownerPinRef := currF.pop().(Reference)
+	ownerPIN := heap[ownerPinRef].(*api.OwnerPIN)
+	ownerPIN.InitOwnerPIN(byte(tryLimit), byte(maxPINSize))
+}
+func callOwnerPINCheck(currF *Frame) {
+	length := currF.pop().(int16)
+	offset := currF.pop().(int16)
+	arr := heap[currF.pop().(Reference)].(*ArrayValue)
+	ownerPinRef := currF.pop().(Reference)
+	ownerPIN := heap[ownerPinRef].(*api.OwnerPIN)
+	cond := ownerPIN.Check(arr.array, offset, byte(length))
+	if cond {
+		currF.push(int16(1)) //push true
+	} else {
+		currF.push(int16(0)) //push false
+	}
+}
+func callIsValidated(currF *Frame) {
+	ownerPinRef := currF.pop().(Reference)
+	ownerPIN := heap[ownerPinRef].(*api.OwnerPIN)
+	cond := ownerPIN.IsValidated()
+	if cond {
+		currF.push(int16(1)) //push true
+	} else {
+		currF.push(int16(0)) //push false
+	}
+}
+func callResetAndUnblock(currF *Frame) {
+	ownerPinRef := currF.pop().(Reference)
+	ownerPIN := heap[ownerPinRef].(*api.OwnerPIN)
+	ownerPIN.ResetAndUnblock()
+}
+func callUpdateOwnerPIN(currF *Frame) {
+	length := currF.pop().(int16)
+	offset := currF.pop().(int16)
+	arr := heap[currF.pop().(Reference)].(*ArrayValue)
+	ownerPinRef := currF.pop().(Reference)
+	ownerPIN := heap[ownerPinRef].(*api.OwnerPIN)
+	n, err := ownerPIN.Update(arr.array, offset, byte(length))
+	if n == 1 && err != nil {
+		SetStatus(n)
+		fmt.Println(err)
+		leaveVM = true
+	}
+}
+func callRegister(currF *Frame) {
+	ref := currF.pop().(Reference)
+	for i, j := range InstanceRefHeap {
+		if reflect.DeepEqual(j, ref) {
+			AppletTable[i] = ConstantApplet
+			return
+		}
+	}
+}
+func callFrameworkMethods(vm *VM, classtoken uint8, methodToken uint8) {
+
+	currF := vm.StackFrame[vm.FrameTop]
 	switch classtoken {
-	case 3: //Class Applet
-		if methodToken == 1 { //register method
-
-		} else if methodToken == 3 { //selectingApplet Method
-
-		}
-	case 16: //Class Util
-		if methodToken == 2 { //ArraycopynonAtomic
+	case applet:
+		if methodToken == register {
+			callRegister(currF)
+		} else if methodToken == selectingApplet {
+			callselectingApplet(currF)
 
 		}
-
-	case 10:
+	case util:
+		if methodToken == arraycopynonAtomic {
+			callArraycopynonAtomic(currF)
+		}
+	case apdu:
 		switch methodToken {
-		case 1: //getBuffer
-		case 3: //receiveBytes
-		case 4: //sendBytes
-		case 5: //sendBytesLong
-		case 6: //setIncomingAndReceive
-		case 7: //setOutgoing
-		case 8: //setOutgoingAndSend
-		case 9: //setOutgoingLength
+		case getbuffer:
+			callgetBuffer(currF)
+		case receiveBytes:
+			callreceiveBytes(currF)
+		case sendBytes:
+			length := currF.pop().(int16)
+			offset := currF.pop().(int16)
+			_ = currF.pop()
+			sndBytes(offset, length)
+		case sendBytesLong:
+			callsendBytesLong(currF)
+		case setIncomingAndReceive:
+			callsetIncomingandreceive(currF)
+		case setOutgoing:
+			callsetOutgoing(currF)
+		case setOutgoingAndSend:
+			callsetOutgoingAndSend(currF)
+		case setOutgoingLength:
+			callsetOutgoingLength(currF)
 		default:
 			//nothing
 			return
 		}
 
-	}
-
-}
-
-//TODO getstatic and athrow bytecode
-
-/*
-*****Byte code verification for later*****
-func verifyInvokeVirtual(index uint16, pCA *AbstractApplet) bool {
-	var protected bool = false
-	var class *ClassDescriptorInfo
-	pCI := pCA.PConstPool.pConstantPool[index]
-	//verify that it is a virtual method
-	if pCI.tag == 3 {
-		byte1 := pCI.info[0]
-		// verify that this method is in the current package or external package
-		superClassRef := pCA.PClass.pClasses[classref].superClassRef
-		//PCLInf := pCA.PClass.pClasses[superClassRef]
-		if byte1&0x80 == 0x80 { //external package
-			if class.methods[j].pAF&AccProtected == AccProtected {
-				protected = true
-			}
-			break
-
-		} else {
-			//internal package
-			classref := makeU2(pCI.info[0], pCI.info[1])
-			token := pCI.info[2]
-			for i := 0; i < int(pCA.PDescriptor.classCount); i++ {
-				if pCA.PDescriptor.classes[i].thisClassRef == classref {
-					class = pCA.PDescriptor.classes[i]
-					break
-				}
-			}
-			for j := 0; j < int(class.methodCount); j++ {
-				if class.methods[j].token == token {
-					if class.methods[j].pAF&AccInit == AccInit {
-						return false
-					}
-				}
-			}
+	case ownerpinClass:
+		switch methodToken {
+		case 0: //init
+			callOwnerPINInit(currF)
+		case check:
+			callOwnerPINCheck(currF)
+		case isValidated:
+			callIsValidated(currF)
+		case resetAndUnblock:
+			callResetAndUnblock(currF)
+		case update:
+			callUpdateOwnerPIN(currF)
+		}
+	case isoException:
+		if methodToken == throwit {
+			callthrowit(currF)
 
 		}
 	}
+
 }
-*/
+func callgetBuffer(currF *Frame) {
+	arrayref := currF.pop().(Reference) //6000
+	arr := heap[arrayref].(*ArrayValue)
+	apduarray := arr.array.([]byte)
+	copy(apduarray[0:], nativeMethods.BufferRcv[:len(apduarray)])
+	currF.push(Reference(6000))
+}
+func callthrowit(currF *Frame) {
+	status := currF.pop().(int16)
+	SetStatus(uint16(status))
+	leaveVM = true
+}
+func callreceiveBytes(currF *Frame) {
+	//Only APDUs case 3 and 4 are expected to call this method.
+	offset := currF.pop().(int16)
+	ref := currF.pop().(Reference)
+	arr := heap[ref].(*ArrayValue)
+	length := nativeMethods.T0RcvData(arr.array.([]byte), offset)
+	currF.push(length)
+}
+func callsetIncomingandreceive(currF *Frame) {
+	ref := currF.pop().(Reference)
+	arr := heap[ref].(*ArrayValue)
+	length := nativeMethods.T0RcvData(arr.array.([]byte), int16(api.OffsetCData))
+	currF.push(length)
+}
+func callsetOutgoing(currF *Frame) {
+	_ = currF.pop().(Reference)
+	currF.push(nativeMethods.LE)
+}
+func callsetOutgoingLength(currF *Frame) {
+	Len := currF.pop().(int16)
+	_ = currF.pop()
+	nativeMethods.LR = byte(Len)
+}
+func sndBytes(offset, length int16) {
+	for length > 0 {
+		temp := length
+		// Need to force GET RESPONSE for Case 4 & for partial blocks
+		if length != int16(nativeMethods.LR) || nativeMethods.LR != nativeMethods.LE || nativeMethods.SendInProgressFlag {
+			temp = nativeMethods.Send61xx(length) // resets
+			nativeMethods.LR -= byte(temp)
+			nativeMethods.LE = nativeMethods.LR
+		}
+		arr := heap[Reference(6000)].(*ArrayValue)
+		nativeMethods.T0SendData(arr.array.([]byte), offset, temp)
+		nativeMethods.SendInProgressFlag = true
+		offset += temp
+		length -= temp
+	}
+
+}
+func callsendBytesLong(currF *Frame) {
+	Len := currF.pop().(int16)
+	bOff := currF.pop().(int16)
+	arrayref := currF.pop().(Reference)
+	apduref := currF.pop().(Reference)
+	outData := heap[arrayref].(*ArrayValue).array.([]byte)
+	apduBuff := heap[apduref].(*ArrayValue).array.([]byte)
+	api.CheckArrayArgs(outData, bOff, Len)
+	sendLength := int16(len(apduBuff))
+	for Len > 0 {
+		if Len < sendLength {
+			sendLength = Len
+		}
+		api.ArrayCopy(outData, bOff, apduBuff, 0, sendLength)
+		sndBytes(0, sendLength)
+		Len -= sendLength
+		bOff += sendLength
+	}
+}
+func callsetOutgoingAndSend(currF *Frame) {
+	Len := currF.pop().(int16)
+	bOff := currF.pop().(int16)
+	_ = currF.pop().(Reference)
+	nativeMethods.LR = byte(Len)
+	sndBytes(bOff, Len)
+}
+func createFrameworkClass(currF *Frame, classtoken uint8) {
+	jcCount++
+	switch classtoken {
+	case ownerpinClass: //OwnerPIN
+		ownerPIN := &api.OwnerPIN{}
+		//add instance in memory heap
+		heap[Reference(jcCount)] = ownerPIN
+		currF.push(Reference(jcCount)) //arbritrary number
+	}
+}

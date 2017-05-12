@@ -6,34 +6,38 @@ import (
 )
 
 const (
-	InsSelect = byte(0xA4)
+	bufferSize = 37
+)
+
+var (
+	SelectingAppletFlag = false
 )
 
 type Apdu struct {
-	Command []byte
-	Buffer  []byte
+	Buffer []byte
 }
 
+//Complete response to the previous adpu and send next
 func (apdu *Apdu) Complete(status uint16) {
 	// Zero out APDU buffer
 	var result int16
 	var err error
-	ArrayfillNonAtomic(apdu.Buffer, 0, BufferSize-5, 0)
-	/*	apdu.Buffer[0] = byte(status >> 8)
-		apdu.Buffer[1] = byte(status)*/
+	ArrayfillNonAtomic(apdu.Buffer, 0, bufferSize, 0)
 	if status == 0 {
-		result, err = nativeMethods.T0RcvCommand(apdu.Command)
+		result, err = nativeMethods.T0RcvCommand(apdu.Buffer)
 		if err != nil {
 			log.Println(err)
-		} else {
-			nativeMethods.CopyToApdubuffer(apdu.Buffer, len(apdu.Buffer))
 		}
 	} else {
 		nativeMethods.T0SetStatus(int(status))
-		result = nativeMethods.T0SndStatusRcvCommand(apdu.Command)
-		nativeMethods.CopyToApdubuffer(apdu.Buffer, len(apdu.Buffer))
+		result = nativeMethods.T0SndStatusRcvCommand(apdu.Buffer)
 	}
 	if result != 0 {
 		log.Println("imput/output error in complete method")
 	}
+}
+
+//GetSelectingAppletFlag ...
+func GetSelectingAppletFlag() bool {
+	return SelectingAppletFlag
 }

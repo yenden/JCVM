@@ -31,6 +31,7 @@ var (
 	InstanceRefHeap = make(map[*api.AID]Reference)
 	arrcount        = 511
 	interfcount     = 255
+	apduBuffLen     = 0
 	//heap           = make(map[int16]*ArrayValue)
 	//heapClass      = make(map[int16]*JavaClass)
 )
@@ -38,7 +39,7 @@ var (
 type ArrayValue struct {
 	componentType typeValue
 	length        uint16
-	array         []interface{}
+	array         interface{} // []interface{}
 }
 type JavaClass struct {
 	classref             uint16
@@ -57,17 +58,15 @@ type instanceField struct {
 func InitApduArr() {
 	array := &ArrayValue{}
 	array.componentType = TypeByte
-	array.length = uint16(128)
-	array.array = make([]interface{}, 128)
-	for i := range array.array {
-		array.array[i] = uint8(0)
-	}
+	array.length = uint16(37)
+	array.array = make([]uint8, 37)
 	heap[Reference(6000)] = array
 }
 
 func FillApduArr(apdu []byte, ref Reference) {
-	array := (heap[Reference(6000)]).(*ArrayValue)
-	for i := range array.array {
-		array.array[i] = apdu[i]
+	arr := (heap[Reference(6000)]).(*ArrayValue)
+	for i := 0; i < len(apdu); i++ {
+		arr.array.([]byte)[i] = apdu[i]
 	}
+	apduBuffLen = len(apdu)
 }

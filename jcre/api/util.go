@@ -10,10 +10,13 @@ func ArrayCopy(srcArray []byte, srcoffset int16, destArray []byte, destoffset in
 	copy(destArray[destoffset:srclen], srcArray[srcoffset:destlen])
 	return destoffset + length
 }
-func ArrayCopyNonAtomic(src []byte, srcOff int16, dest []byte, destOff int16, length int16) int16 {
+func ArrayCopyNonAtomic(src interface{}, srcOff int16, dest interface{}, destOff int16, length int16) int16 {
 	srclen := destOff + length
 	destlen := srcOff + length
-	copy(dest[destOff:srclen], src[srcOff:destlen])
+	switch src.(type) {
+	case []uint8:
+		copy(dest.([]uint8)[destOff:srclen], src.([]uint8)[srcOff:destlen])
+	}
 	return destOff + length
 }
 func ArrayfillNonAtomic(bArray []byte, bOff int16, bLen int16, bValue byte) (int16, error) {
