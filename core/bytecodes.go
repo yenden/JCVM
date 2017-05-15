@@ -2,7 +2,6 @@ package core
 
 import (
 	"JCVM/jcre/api"
-	"JCVM/jcre/nativeMethods"
 	"errors"
 	"fmt"
 	"reflect"
@@ -164,7 +163,6 @@ func sastore(currF *Frame) {
 func sinc(currF *Frame, index uint8, constant int8) {
 	interm := currF.Localvariables[index].(int16)
 	currF.Localvariables[index] = interm + int16(constant)
-	fmt.Println("Result ", currF.Localvariables[index].(int16))
 }
 func popBytecode(currF *Frame) {
 	interm := currF.operandStack[currF.opStackTop]
@@ -235,10 +233,10 @@ func iadd(currF *Frame) {
 	currF.push(result)
 }
 func sadd(currF *Frame) {
-	value1 := currF.pop()
-	value2 := currF.pop()
-	result := value1.(int16) + value2.(int16)
-	currF.push(result)
+	value1 := currF.pop().(int16)
+	value2 := currF.pop().(int16)
+	result := value1 + value2
+	currF.push(int16(result))
 }
 func isub(currF *Frame) {
 	value2 := currF.pop()
@@ -270,6 +268,13 @@ func irem(currF *Frame) {
 	result := value1.(int32) - (value1.(int32)/value2.(int32))*value2.(int32)
 	currF.push(result)
 }
+func srem(currF *Frame) {
+	value2 := currF.pop()
+	value1 := currF.pop()
+	result := value1.(int16) - (value1.(int16)/value2.(int16))*value2.(int16)
+	currF.push(result)
+}
+
 func ishl(currF *Frame) {
 	value2 := currF.pop()
 	value1 := currF.pop()
@@ -307,6 +312,11 @@ func i2b(currF *Frame) {
 	interm := int16(value.(int32) & 0x0000FFFF)
 	result := int16(int8(interm))
 	currF.push(result)
+}
+func s2b(currF *Frame) {
+	value := currF.pop().(int16)
+	interm := uint8(value)
+	currF.push(int16(interm))
 }
 func i2s(currF *Frame) {
 	value := currF.pop()
@@ -578,6 +588,7 @@ func vmNew(currF *Frame, index uint16, pCA *AbstractApplet) {
 			if reflect.DeepEqual(pPI.AID, frameworkAID) { //classes of package framework
 				classtoken := pCI.info[1]
 				createFrameworkClass(currF, classtoken)
+				return
 			}
 			fmt.Println("Error: cannot create class package not found")
 		}
@@ -593,8 +604,6 @@ func vmNew(currF *Frame, index uint16, pCA *AbstractApplet) {
 	pckg := pCA.PHeader.PThisPackage
 	aid := api.InitAID(pckg.AID, 0, int16(pckg.AIDLength))
 	InstanceRefHeap[aid] = Reference(jcCount)
-	fmt.Println(InstanceRefHeap[aid])
-
 	//add instance in memory heap
 	heap[Reference(jcCount)] = class
 	currF.push(Reference(jcCount)) //arbritrary number
@@ -648,6 +657,9 @@ func setInstanceFieldsDefaultValue(classInf *ClassDescriptorInfo, javaClass *Jav
 				value = Reference(0)
 			}
 			javaClass.fields[i] = &instanceField{token, value}
+		} else {
+			token = classInf.fields[i].token
+			javaClass.fields[i] = &instanceField{token, 0}
 		}
 	}
 }
@@ -702,8 +714,10 @@ func getFieldThis(currF *Frame, index uint8, pCA *AbstractApplet) {
 				switch value.(type) {
 				case uint8:
 					currF.push(int16(value.(uint8)))
+					fmt.Println("getfield", int16(value.(uint8)))
 				case int16:
 					currF.push(value.(int16))
+					fmt.Println("getfield", value.(uint16))
 				default:
 					currF.push(value)
 				}
@@ -739,6 +753,14 @@ func ifScmpne(currF *Frame, branch int8, pPC *int) {
 	value2 := currF.pop()
 	value1 := currF.pop()
 	if value1.(int16) != value2.(int16) {
+		(*pPC) += int(branch)
+		(*pPC) -= 2
+	}
+}
+func ifScmpeq(currF *Frame, branch int8, pPC *int) {
+	value2 := currF.pop()
+	value1 := currF.pop()
+	if value1.(int16) == value2.(int16) {
 		(*pPC) += int(branch)
 		(*pPC) -= 2
 	}
@@ -808,8 +830,8 @@ func putstatic(currF *Frame, index uint16, pCA *AbstractApplet, ins int) {
 		pCA.PStaticField.pStaticFieldImage[offset] = uint8(value / 0x100)
 		pCA.PStaticField.pStaticFieldImage[offset+1] = uint8(value % 0x100)
 	case 0x80:
-		value := currF.pop().(uint8)
-		pCA.PStaticField.pStaticFieldImage[offset] = value
+		value := currF.pop().(int16)
+		pCA.PStaticField.pStaticFieldImage[offset] = uint8(value)
 	case 0x81:
 		value := currF.pop().(int16)
 		pCA.PStaticField.pStaticFieldImage[offset] = uint8(value / 0x100)
@@ -825,7 +847,7 @@ func putstatic(currF *Frame, index uint16, pCA *AbstractApplet, ins int) {
 }
 func callselectingApplet(currF *Frame) {
 	_ = currF.pop()
-	cond := api.GetSelectingAppletFlag()
+	cond := api.GetSelectingAppLetFlag()
 	if cond {
 		currF.push(int16(1)) //push true
 	} else {
@@ -907,7 +929,8 @@ func callFrameworkMethods(vm *VM, classtoken uint8, methodToken uint8) {
 			callRegister(currF)
 		} else if methodToken == selectingApplet {
 			callselectingApplet(currF)
-
+		} else if methodToken == 0 { //init
+			_ = currF.pop().(Reference)
 		}
 	case util:
 		if methodToken == arraycopynonAtomic {
@@ -922,8 +945,9 @@ func callFrameworkMethods(vm *VM, classtoken uint8, methodToken uint8) {
 		case sendBytes:
 			length := currF.pop().(int16)
 			offset := currF.pop().(int16)
-			_ = currF.pop()
-			sndBytes(offset, length)
+			ref := currF.pop().(Reference)
+			arr := heap[ref].(*ArrayValue)
+			api.SendBytes(arr.array.([]byte), offset, length)
 		case sendBytesLong:
 			callsendBytesLong(currF)
 		case setIncomingAndReceive:
@@ -964,7 +988,7 @@ func callgetBuffer(currF *Frame) {
 	arrayref := currF.pop().(Reference) //6000
 	arr := heap[arrayref].(*ArrayValue)
 	apduarray := arr.array.([]byte)
-	copy(apduarray[0:], nativeMethods.BufferRcv[:len(apduarray)])
+	api.GetBuffer(apduarray)
 	currF.push(Reference(6000))
 }
 func callthrowit(currF *Frame) {
@@ -977,40 +1001,24 @@ func callreceiveBytes(currF *Frame) {
 	offset := currF.pop().(int16)
 	ref := currF.pop().(Reference)
 	arr := heap[ref].(*ArrayValue)
-	length := nativeMethods.T0RcvData(arr.array.([]byte), offset)
+	length := api.ReceiveBytes(arr.array.([]byte), offset)
 	currF.push(length)
 }
 func callsetIncomingandreceive(currF *Frame) {
 	ref := currF.pop().(Reference)
 	arr := heap[ref].(*ArrayValue)
-	length := nativeMethods.T0RcvData(arr.array.([]byte), int16(api.OffsetCData))
+	length := api.SetIncomingandreceive(arr.array.([]byte))
 	currF.push(length)
 }
 func callsetOutgoing(currF *Frame) {
-	_ = currF.pop().(Reference)
-	currF.push(nativeMethods.LE)
+	ref := currF.pop().(Reference)
+	_ = heap[ref].(*ArrayValue)
+	currF.push(api.SetOutgoing())
 }
 func callsetOutgoingLength(currF *Frame) {
 	Len := currF.pop().(int16)
 	_ = currF.pop()
-	nativeMethods.LR = byte(Len)
-}
-func sndBytes(offset, length int16) {
-	for length > 0 {
-		temp := length
-		// Need to force GET RESPONSE for Case 4 & for partial blocks
-		if length != int16(nativeMethods.LR) || nativeMethods.LR != nativeMethods.LE || nativeMethods.SendInProgressFlag {
-			temp = nativeMethods.Send61xx(length) // resets
-			nativeMethods.LR -= byte(temp)
-			nativeMethods.LE = nativeMethods.LR
-		}
-		arr := heap[Reference(6000)].(*ArrayValue)
-		nativeMethods.T0SendData(arr.array.([]byte), offset, temp)
-		nativeMethods.SendInProgressFlag = true
-		offset += temp
-		length -= temp
-	}
-
+	api.SetOutgoingLength(Len)
 }
 func callsendBytesLong(currF *Frame) {
 	Len := currF.pop().(int16)
@@ -1019,24 +1027,14 @@ func callsendBytesLong(currF *Frame) {
 	apduref := currF.pop().(Reference)
 	outData := heap[arrayref].(*ArrayValue).array.([]byte)
 	apduBuff := heap[apduref].(*ArrayValue).array.([]byte)
-	api.CheckArrayArgs(outData, bOff, Len)
-	sendLength := int16(len(apduBuff))
-	for Len > 0 {
-		if Len < sendLength {
-			sendLength = Len
-		}
-		api.ArrayCopy(outData, bOff, apduBuff, 0, sendLength)
-		sndBytes(0, sendLength)
-		Len -= sendLength
-		bOff += sendLength
-	}
+	api.SendBytesLong(Len, bOff, outData, apduBuff)
 }
 func callsetOutgoingAndSend(currF *Frame) {
 	Len := currF.pop().(int16)
 	bOff := currF.pop().(int16)
-	_ = currF.pop().(Reference)
-	nativeMethods.LR = byte(Len)
-	sndBytes(bOff, Len)
+	ref := currF.pop().(Reference)
+	apduBuff := heap[ref].(*ArrayValue).array.([]byte)
+	api.SetOutgoingAndSend(apduBuff, Len, bOff)
 }
 func createFrameworkClass(currF *Frame, classtoken uint8) {
 	jcCount++

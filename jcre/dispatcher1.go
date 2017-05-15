@@ -4,7 +4,6 @@ import (
 	"JCVM/core"
 	"JCVM/jcre/api"
 	"JCVM/jcre/nativeMethods"
-	"fmt"
 	"reflect"
 )
 
@@ -27,7 +26,8 @@ func MainLoop() {
 	// main loop
 	for {
 		resetSelectingAppletFlag()
-		TheApdu.Complete(sw) // respond to previous APDU and get next
+		TheApdu.Complete(sw)   // respond to previous APDU and get next
+		core.SetStatus(0x9000) //reset status
 		// Process channel information
 		if processAndForward() { // Dispatcher handles the SELECT
 			// APDU
@@ -62,7 +62,6 @@ func selectApdu(apdu *api.Apdu) {
 	if Len == int16(apdu.Buffer[4]) {
 		aidBytes := apdu.Buffer[5 : 5+Len]
 		currSelectedApplet = api.InitAID(aidBytes, 0, int16(len(aidBytes)))
-		fmt.Println(currSelectedApplet)
 	}
 	setSelectingAppletFlag()
 }
@@ -94,10 +93,10 @@ func cardReset() {
 	currSelectedApplet.TheAID = []byte{0, 0, 0, 0, 0, 0}
 }*/
 func resetSelectingAppletFlag() {
-	api.SelectingAppletFlag = false
+	api.SelectingAppLetFlag = false
 }
 func setSelectingAppletFlag() {
-	api.SelectingAppletFlag = true
+	api.SelectingAppLetFlag = true
 }
 
 func initVM() *core.VM {
@@ -111,7 +110,7 @@ func initVM() *core.VM {
 func initProcess() *core.VM {
 	vm := initVM()
 	//core.FillApduArr(TheApdu.Buffer, core.Reference(6000))
-	vm.StackFrame[vm.FrameTop].Localvariables = make([]interface{}, 30)
+	vm.StackFrame[vm.FrameTop].Localvariables = make([]interface{}, 200)
 	vm.StackFrame[vm.FrameTop].Localvariables[0] = core.InstanceRefHeap[currSelectedApplet]
 	vm.StackFrame[vm.FrameTop].Localvariables[1] = core.Reference(6000)
 	return vm

@@ -82,7 +82,6 @@ func (own *OwnerPIN) Check(pin interface{}, offset int16, length byte) bool {
 	}
 	if length > 0 {
 		if (length != own.pinSize) || noMoreTries {
-
 			return false
 		}
 	}

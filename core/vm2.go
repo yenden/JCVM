@@ -228,6 +228,8 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			imul(currentFrame)
 		case 0x48:
 			idiv(currentFrame)
+		case 0x49:
+			srem(currentFrame)
 		case 0x4a:
 			irem(currentFrame)
 		case 0x4E:
@@ -248,6 +250,8 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			index := readU1(pByteCode, pPC)
 			constant := int8(readU1(pByteCode, pPC))
 			iint(currentFrame, index, constant)
+		case 0x5B:
+			s2b(currentFrame)
 		case 0x5D:
 			i2b(currentFrame)
 		case 0x5E:
@@ -276,6 +280,9 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x67:
 			bValue := int8(readU1(pByteCode, pPC))
 			ifnnnull(currentFrame, bValue, pPC)
+		case 0x6A:
+			bValue := int8(readU1(pByteCode, pPC))
+			ifScmpeq(currentFrame, bValue, pPC)
 		case 0x6B:
 			bValue := int8(readU1(pByteCode, pPC))
 			ifScmpne(currentFrame, bValue, pPC)

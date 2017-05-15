@@ -36,13 +36,14 @@ func (sfc *StaticFieldComponent) buildStaticFieldImage() {
 	//Update segment 3
 	//Segment 3 - primitive types initialized to default values.
 	for i := 0; i < int(sfc.defaultValueCount); i++ {
-		imageCounter++
 		sfc.pStaticFieldImage[imageCounter] = 0
+		imageCounter++
+
 	}
 	//Update segment 4
 	//Segment 4 - primitive types initialized to non-default values.
 	for i := 0; i < int(sfc.nonDefaultValueCount); i++ {
+		sfc.pStaticFieldImage[imageCounter] = sfc.pNonDefaultValues[i]
 		imageCounter++
-		sfc.pStaticFieldImage[imageCounter] = sfc.pNonDefaultValues[imageCounter]
 	}
 }
