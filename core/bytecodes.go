@@ -381,7 +381,7 @@ func ifnnnull(currF *Frame, branch int8, pPC *int) {
 		(*pPC) -= 2
 	}
 }
-func iint(currF *Frame, index uint8, constant int8) {
+func iinc(currF *Frame, index uint8, constant int8) {
 	switch currF.Localvariables[index].(type) {
 	case int32:
 		currF.Localvariables[index] = int32(constant)
@@ -623,12 +623,69 @@ func createClassInstance(classtoken uint8, soffset uint16, pCL *AbstractApplet) 
 	}
 	javaClass := &JavaClass{classref, superclassref, declaredinstancesize, nil, nil}
 	setInstanceFieldsDefaultValue(classInf, javaClass)
+	setStaticFieldValues(pCL)
 	return javaClass
+}
+func setStaticFieldValues(pCL *AbstractApplet) {
+	sfc := pCL.PStaticField
+	var k int
+	for i := 0; i < int(sfc.arrayInitCount); i++ {
+		typ := sfc.pArrayInit[i].typ
+		count := sfc.pArrayInit[i].count
+		array := &ArrayValue{}
+		switch typ {
+		case 2: //boolean
+			array.componentType = 1
+			array.length = count
+			array.array = make([]uint8, count)
+			for j := 0; j < int(count); j++ {
+				array.array.([]uint8)[j] = sfc.pArrayInit[i].pValues[j]
+			}
+
+		case 3: //byte
+			array.componentType = 2
+			array.length = count
+			array.array = make([]byte, count)
+			for j := 0; j < int(count); j++ {
+				array.array.([]byte)[j] = sfc.pArrayInit[i].pValues[j]
+			}
+		case 4: //short
+			array.componentType = 3
+			array.length = count / 2
+			array.array = make([]int16, array.length)
+			var k int
+			for j := 0; j < int(count/2); j++ {
+				array.array.([]int16)[j] = readS2(sfc.pArrayInit[i].pValues, &k)
+			}
+
+		case 5: //int
+			array.componentType = 4
+			array.length = count / 4
+			array.array = make([]int32, array.length)
+			var k int
+			for j := 0; j < int(count/4); j++ {
+				array.array.([]int32)[j] = readS4(sfc.pArrayInit[i].pValues, &k)
+			}
+		}
+		arrcount++
+		sfc.pStaticFieldImage[k] = uint8((arrcount & 0xFF00) >> 8)
+		k++
+		sfc.pStaticFieldImage[k] = uint8(arrcount & 0x00FF)
+		k++
+		heap[Reference(arrcount)] = array
+	}
+
 }
 func setInstanceFieldsDefaultValue(classInf *ClassDescriptorInfo, javaClass *JavaClass) {
 	var token uint8
 	var value interface{}
-	javaClass.fields = make([]*instanceField, classInf.fieldCount)
+	var number, j int
+	for i := 0; i < int(classInf.fieldCount); i++ {
+		if classInf.fields[i].pAF&AccStatic != AccStatic {
+			number++
+		}
+	}
+	javaClass.fields = make([]*instanceField, number)
 	for i := 0; i < int(classInf.fieldCount); i++ {
 		if classInf.fields[i].pAF&AccStatic != AccStatic {
 			a := classInf.fields[i].pFieldtype
@@ -636,11 +693,11 @@ func setInstanceFieldsDefaultValue(classInf *ClassDescriptorInfo, javaClass *Jav
 			case 0x8002:
 				//bool
 				token = classInf.fields[i].token
-				value = int16(0)
+				value = uint8(0)
 			case 0x8003:
 				//byte
 				token = classInf.fields[i].token
-				value = int16(0)
+				value = uint8(0)
 
 			case 0x8004:
 				//short
@@ -656,10 +713,8 @@ func setInstanceFieldsDefaultValue(classInf *ClassDescriptorInfo, javaClass *Jav
 				token = classInf.fields[i].token
 				value = Reference(0)
 			}
-			javaClass.fields[i] = &instanceField{token, value}
-		} else {
-			token = classInf.fields[i].token
-			javaClass.fields[i] = &instanceField{token, 0}
+			javaClass.fields[j] = &instanceField{token, value}
+			j++
 		}
 	}
 }
@@ -688,8 +743,9 @@ func newArray(currF *Frame, atype uint8) {
 		array.length = uint16(count)
 		array.array = make([]int32, count)
 	}
-	heap[Reference(arrcount+1)] = array
-	currF.push(Reference(arrcount + 1))
+	arrcount++
+	heap[Reference(arrcount)] = array
+	currF.push(Reference(arrcount))
 }
 func anewArray(currF *Frame, index uint16, pCA *AbstractApplet) {
 	pCI := pCA.PConstPool.pConstantPool[index]
@@ -714,10 +770,8 @@ func getFieldThis(currF *Frame, index uint8, pCA *AbstractApplet) {
 				switch value.(type) {
 				case uint8:
 					currF.push(int16(value.(uint8)))
-					fmt.Println("getfield", int16(value.(uint8)))
 				case int16:
 					currF.push(value.(int16))
-					fmt.Println("getfield", value.(uint16))
 				default:
 					currF.push(value)
 				}
@@ -901,7 +955,9 @@ func callResetAndUnblock(currF *Frame) {
 func callUpdateOwnerPIN(currF *Frame) {
 	length := currF.pop().(int16)
 	offset := currF.pop().(int16)
-	arr := heap[currF.pop().(Reference)].(*ArrayValue)
+	arraref := currF.pop().(Reference)
+	//fmt.Pritn
+	arr := heap[arraref].(*ArrayValue)
 	ownerPinRef := currF.pop().(Reference)
 	ownerPIN := heap[ownerPinRef].(*api.OwnerPIN)
 	n, err := ownerPIN.Update(arr.array, offset, byte(length))
@@ -993,6 +1049,7 @@ func callgetBuffer(currF *Frame) {
 }
 func callthrowit(currF *Frame) {
 	status := currF.pop().(int16)
+	fmt.Println("throwit", status)
 	SetStatus(uint16(status))
 	leaveVM = true
 }
@@ -1045,4 +1102,14 @@ func createFrameworkClass(currF *Frame, classtoken uint8) {
 		heap[Reference(jcCount)] = ownerPIN
 		currF.push(Reference(jcCount)) //arbritrary number
 	}
+}
+func slookupswitch(currF *Frame, deflt int16, npairs uint16, pPC *int) {
+	key := currF.pop().(int16)
+	offset, present := slookupswitchMap[key]
+	if present {
+		(*pPC) += int(offset)
+	} else {
+		(*pPC) += int(deflt)
+	}
+	(*pPC) = (*pPC) - int(5+4*npairs)
 }

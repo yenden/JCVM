@@ -15,13 +15,7 @@ var (
 	BufferRcv  = make([]byte, 128)
 	bufferSend = make([]byte, 128)
 	command    = make([]byte, 5)
-	/*//LC is the data length send in the apdu
-	LC byte
-	//LE expected length in the response
-	LE byte
-	//LR apdu response length
-	LR byte*/
-	sw int
+	sw         int
 	//Addr client application address
 	Addr    *net.UDPAddr
 	apduPtr = int16(5)

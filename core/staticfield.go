@@ -20,11 +20,6 @@ type StaticFieldComponent struct {
 	pStaticFieldImage    []uint8
 }
 
-/*func (sfc *StaticFieldComponent) beginBuildNonDefaultValues(defaultvaluecount uint16, nondefaultvaluecount uint16) {
-	sfc.defaultValueCount = defaultvaluecount
-	sfc.nonDefaultValueCount = nondefaultvaluecount
-	sfc.pNonDefaultValues = make([]uint8, nondefaultvaluecount)
-}*/
 func (sfc *StaticFieldComponent) buildStaticFieldImage() {
 	sfc.pStaticFieldImage = make([]uint8, sfc.imageSize)
 	//Build segment 1 and segment 2 data.

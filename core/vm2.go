@@ -20,8 +20,9 @@ type VM struct {
 }
 
 var (
-	status  = uint16(0x9000)
-	leaveVM = false
+	status           = uint16(0x9000)
+	leaveVM          = false
+	slookupswitchMap = make(map[int16]int16)
 )
 
 func GetStatus() uint16 {
@@ -244,12 +245,12 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			ixor(currentFrame)
 		case 0x59:
 			index := readU1(pByteCode, pPC)
-			constant := int8(readU1(pByteCode, pPC))
+			constant := readS1(pByteCode, pPC)
 			sinc(currentFrame, index, constant)
 		case 0x5A:
 			index := readU1(pByteCode, pPC)
-			constant := int8(readU1(pByteCode, pPC))
-			iint(currentFrame, index, constant)
+			constant := readS1(pByteCode, pPC)
+			iinc(currentFrame, index, constant)
 		case 0x5B:
 			s2b(currentFrame)
 		case 0x5D:
@@ -257,38 +258,47 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x5E:
 			i2s(currentFrame)
 		case 0x60:
-			bValue := int8(readU1(pByteCode, pPC))
+			bValue := readS1(pByteCode, pPC)
 			ifeq(currentFrame, bValue, pPC)
 		case 0x61:
-			bValue := int8(readU1(pByteCode, pPC))
+			bValue := readS1(pByteCode, pPC)
 			ifne(currentFrame, bValue, pPC)
 		case 0x62:
-			bValue := int8(readU1(pByteCode, pPC))
+			bValue := readS1(pByteCode, pPC)
 			iflt(currentFrame, bValue, pPC)
 		case 0x63:
-			bValue := int8(readU1(pByteCode, pPC))
+			bValue := readS1(pByteCode, pPC)
 			ifge(currentFrame, bValue, pPC)
 		case 0x64:
-			bValue := int8(readU1(pByteCode, pPC))
+			bValue := readS1(pByteCode, pPC)
 			ifgt(currentFrame, bValue, pPC)
 		case 0x65:
-			bValue := int8(readU1(pByteCode, pPC))
+			bValue := readS1(pByteCode, pPC)
 			ifle(currentFrame, bValue, pPC)
 		case 0x66:
-			bValue := int8(readU1(pByteCode, pPC))
+			bValue := readS1(pByteCode, pPC)
 			ifnull(currentFrame, bValue, pPC)
 		case 0x67:
-			bValue := int8(readU1(pByteCode, pPC))
+			bValue := readS1(pByteCode, pPC)
 			ifnnnull(currentFrame, bValue, pPC)
 		case 0x6A:
-			bValue := int8(readU1(pByteCode, pPC))
+			bValue := readS1(pByteCode, pPC)
 			ifScmpeq(currentFrame, bValue, pPC)
 		case 0x6B:
-			bValue := int8(readU1(pByteCode, pPC))
+			bValue := readS1(pByteCode, pPC)
 			ifScmpne(currentFrame, bValue, pPC)
 		case 0x70:
-			bValue := int8(readU1(pByteCode, pPC))
+			bValue := readS1(pByteCode, pPC)
 			goTo(currentFrame, bValue, pPC)
+		case 0x75:
+			deflt := readS2(pByteCode, pPC)
+			npairs := readU2(pByteCode, pPC)
+			for k := 0; k < int(npairs); k++ {
+				match := readS2(pByteCode, pPC)
+				pairs := readS2(pByteCode, pPC)
+				slookupswitchMap[match] = pairs
+			}
+			slookupswitch(currentFrame, deflt, npairs, pPC)
 		case 0x77:
 			invokerFrame := vm.StackFrame[vm.FrameTop-1]
 			areturn(currentFrame, invokerFrame)
@@ -346,6 +356,7 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x8a:
 			indexa := readU1(pByteCode, pPC)
 			putfield(currentFrame, indexa, pCA)
+
 		case 0x8B:
 			indexb := readU2(pByteCode, pPC)
 			invokevirtual(currentFrame, indexb, pCA, vm)

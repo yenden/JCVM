@@ -59,7 +59,7 @@ func InitApduArr() {
 	array := &ArrayValue{}
 	array.componentType = TypeByte
 	array.length = uint16(37)
-	array.array = make([]uint8, 37)
+	array.array = make([]byte, 37)
 	heap[Reference(6000)] = array
 }
 

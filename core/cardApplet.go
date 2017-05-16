@@ -95,10 +95,6 @@ func (cl *CardApplet) Process(vm *VM) {
 			break
 		}
 	}
-	/*if processMethodOf != 7 {
-		fmt.Println("Didn't found process method!")
-		return
-	}*/
 	cl.AbsA.PMethod.executeByteCode(processMethodOf, cl.AbsA, vm, false, true)
 	fmt.Println("Process finished!")
 }
