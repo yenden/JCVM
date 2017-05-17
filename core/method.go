@@ -1,9 +1,5 @@
 package core
 
-import (
-	"fmt"
-)
-
 type ExceptionHandlerInfo struct {
 	startOffset    uint16
 	activeLength   uint16
@@ -40,19 +36,20 @@ func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet
 	iPosm2 := int(offset - 1)
 	flags := readU1(mComp.pMethodInfo, &iPosm2)
 	currFrame := vm.StackFrame[vm.FrameTop]
-	var maxStack, nargs, maxLocals uint8
+	//var maxStack, nargs, maxLocals uint8
+	var nargs uint8
 	if isExtended(flags) {
-		maxStack = readU1(mComp.pMethodInfo, &iPosm2)
+		readU1(mComp.pMethodInfo, &iPosm2)
 		nargs = readU1(mComp.pMethodInfo, &iPosm2)
-		maxLocals = readU1(mComp.pMethodInfo, &iPosm2)
+		readU1(mComp.pMethodInfo, &iPosm2)
 	} else {
 		//if abstract
-		maxStack = readLow(flags)
+		readLow(flags)
 		bitField := readU1(mComp.pMethodInfo, &iPosm2)
 		nargs = readHighShift(bitField)
-		maxLocals = readLow(bitField)
+		readLow(bitField)
 	}
-	fmt.Println("max stack", maxStack, "maxlocal", maxLocals)
+	//fmt.Println("max stack", maxStack, "maxlocal", maxLocals)
 	if !processCond {
 		currFrame.opStackTop = -1
 		currFrame.Localvariables = make([]interface{}, 200)

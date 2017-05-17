@@ -244,6 +244,12 @@ func isub(currF *Frame) {
 	result := value1.(int32) - value2.(int32)
 	currF.push(result)
 }
+func ssub(currF *Frame) {
+	value2 := currF.pop()
+	value1 := currF.pop()
+	result := value1.(int16) - value2.(int16)
+	currF.push(result)
+}
 func imul(currF *Frame) {
 	value1 := currF.pop()
 	value2 := currF.pop()
@@ -318,6 +324,10 @@ func s2b(currF *Frame) {
 	interm := uint8(value)
 	currF.push(int16(interm))
 }
+func s2i(currF *Frame) {
+	value := currF.pop().(int16)
+	currF.push(int32(value))
+}
 func i2s(currF *Frame) {
 	value := currF.pop()
 	interm := int16(value.(int32) & 0x0000FFFF)
@@ -363,6 +373,17 @@ func ifle(currF *Frame, branch int8, pPC *int) {
 	if value.(int16) <= 0 {
 		(*pPC) += int(branch)
 		(*pPC) -= 2
+	}
+}
+func icmp(currF *Frame) {
+	val2 := currF.pop().(int32)
+	val1 := currF.pop().(int32)
+	if val1 > val2 {
+		currF.push(int16(1))
+	} else if val1 == val2 {
+		currF.push(int16(0))
+	} else {
+		currF.push(int16(-1))
 	}
 }
 
@@ -1049,7 +1070,6 @@ func callgetBuffer(currF *Frame) {
 }
 func callthrowit(currF *Frame) {
 	status := currF.pop().(int16)
-	fmt.Println("throwit", status)
 	SetStatus(uint16(status))
 	leaveVM = true
 }

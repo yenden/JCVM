@@ -1,5 +1,6 @@
 package test
 
+/*
 import (
 	"JCVM/core"
 	"testing"
@@ -17,3 +18,4 @@ func TestBuildApplet(t *testing.T) {
 	}
 
 }
+*/

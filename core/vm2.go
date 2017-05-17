@@ -221,6 +221,8 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			sadd(currentFrame)
 		case 0x42:
 			iadd(currentFrame)
+		case 0x43:
+			ssub(currentFrame)
 		case 0x44:
 			isub(currentFrame)
 		case 0x45:
@@ -253,10 +255,14 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 			iinc(currentFrame, index, constant)
 		case 0x5B:
 			s2b(currentFrame)
+		case 0x5C:
+			s2i(currentFrame)
 		case 0x5D:
 			i2b(currentFrame)
 		case 0x5E:
 			i2s(currentFrame)
+		case 0x5F:
+			icmp(currentFrame)
 		case 0x60:
 			bValue := readS1(pByteCode, pPC)
 			ifeq(currentFrame, bValue, pPC)

@@ -9,7 +9,9 @@ import (
 
 var (
 	sendRcvCycleStarted = false
-	conn                *net.UDPConn
+	//conn                *net.UDPConn
+	conn net.Conn
+
 	//BufferRcv used to receive the incoming
 	//and outgoing data
 	BufferRcv  = make([]byte, 128)
@@ -17,12 +19,17 @@ var (
 	command    = make([]byte, 5)
 	sw         int
 	//Addr client application address
-	Addr    *net.UDPAddr
-	apduPtr = int16(5)
+	Addr      *net.UDPAddr
+	apduPtr   = int16(5)
+	firsttime = true
 )
 
-func protocolServer() *net.UDPConn {
-	if conn == nil {
+func protocolServer() net.Conn { //*net.UDPConn {
+	if firsttime {
+		fmt.Println("Card is up ")
+	}
+	firsttime = false
+	/*if conn == nil {
 		hostName := "localhost"
 		portNum := "6000"
 		service := hostName + ":" + portNum
@@ -36,45 +43,63 @@ func protocolServer() *net.UDPConn {
 			log.Fatal(err)
 		}
 		fmt.Println("Card is up ")
-	}
+	}*/
 	return conn
 }
 
 //PowerUP launch the jcre and represent the first reset
-func PowerUP() {
-	var addr *net.UDPAddr
+func PowerUP(connect net.Conn) {
+	//var addr *net.UDPAddr
 	var err error
+	conn = connect
 	atr := []byte{59, 00, 17, 0, 00}
 	for BufferRcv[0] == 0x00 && BufferRcv[1] == 0x00 {
 		fmt.Println("wait for Powerup() for card activation")
-		_, addr, err = protocolServer().ReadFromUDP(BufferRcv)
+		_, err = protocolServer().Read(BufferRcv)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		/*	_, addr, err = protocolServer().ReadFromUDP(BufferRcv)
+			if err != nil {
+				log.Fatal(err)
+			}*/
 	}
-	_, err = protocolServer().WriteToUDP(atr, addr)
+	_, err = protocolServer().Write(atr)
 	if err != nil {
 		log.Fatal(err)
 	}
+	/*_, err = protocolServer().WriteToUDP(atr, addr)
+	if err != nil {
+		log.Fatal(err)
+	}*/
 }
 
-func receive() (*net.UDPAddr, int) {
+func receive() /**net.UDPAddr,*/ int {
 	apduPtr = 5
-	n, addr, err := protocolServer().ReadFromUDP(BufferRcv)
+	n, err := protocolServer().Read(BufferRcv)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//setParam(n)
-	return addr, n
+	/*n, addr, err := protocolServer().ReadFromUDP(BufferRcv)
+	if err != nil {
+		log.Fatal(err)
+	}*/
+	//return addr, n
+	return n
 }
 func sendStatus(sw int) {
 	bs := make([]byte, 2)
 	bs[0] = byte(sw >> 8)
 	bs[1] = byte(sw)
-	_, err := protocolServer().WriteToUDP(bs, Addr)
+	_, err := protocolServer().Write(bs)
 	if err != nil {
 		log.Fatal(err)
 	}
+	/*_, err := protocolServer().WriteToUDP(bs, Addr)
+	if err != nil {
+		log.Fatal(err)
+	}*/
 }
 
 //T0RcvCommand is to receive the command part of apdu
@@ -86,7 +111,8 @@ func T0RcvCommand(com []byte) (int, error) {
 	//receive apdu and copy its command in command buffer
 	sendRcvCycleStarted = true
 	var n int
-	Addr, n = receive()
+	n = receive()
+	//Addr, n = receive()
 	copy(com[0:5], BufferRcv[0:5])
 	copy(command[0:], BufferRcv[0:5])
 	return n, nil
@@ -96,7 +122,8 @@ func T0RcvCommand(com []byte) (int, error) {
 func T0SndStatusRcvCommand(com []byte) int {
 	sendStatus(sw)
 	var n int
-	Addr, n = receive()
+	n = receive()
+	//Addr, n = receive()
 	copy(com[0:5], BufferRcv[0:5])
 	copy(command[0:], BufferRcv[0:5])
 	return n
@@ -118,11 +145,16 @@ func T0RcvData(apduBuffer []byte, offset int16) int16 {
 
 //T0SendData copy to the outgoing apdu buffer
 func T0SendData(apduBuffer []byte, offset int16, length int16) {
-	//copy(bufferSend[0:length], apduBuffer[offset:length])
-	_, err := protocolServer().WriteToUDP(apduBuffer[offset:length], Addr)
+	_, err := protocolServer().Write(apduBuffer[offset:length])
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	/*
+		_, err := protocolServer().WriteToUDP(apduBuffer[offset:length], Addr)
+		if err != nil {
+			log.Fatal(err)
+		}*/
 }
 
 //T0CopyToApdubuffer copy the content of buffer in another array
@@ -139,24 +171,3 @@ func T0SndGetResponse() int16 {
 	T0SndStatusRcvCommand(command)
 	return int16(command[4] & 0xFF)
 }
-
-/*
-func setParam(n int) {
-	if n < 4 {
-		log.Fatal("Error: Apdu len must be >4")
-	} else if n == 4 { //apdu case 1 ---CLA|INS|P1|P2---
-		LE = 0
-		LC = 0
-	} else if n == 5 { //apdu case 2 ---CLA|INS|P1|P2|Le---
-		LC = 0
-		LE = BufferRcv[4]
-	} else if n == int(5+BufferRcv[4]) { //apdu case 3 ---CLA|INS|P1|P2|LC|Data---
-		LC = BufferRcv[4]
-		LE = 0
-	} else { //apdu case 4 ---CLA|INS|P1|P2|LC|Data|Le---
-		LC = BufferRcv[4]
-		LE = BufferRcv[n-1]
-	}
-	LR = LE
-}
-*/

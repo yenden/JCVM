@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"fmt"
 )
 
 type OwnerPIN struct {
@@ -90,7 +89,7 @@ func (own *OwnerPIN) Check(pin interface{}, offset int16, length byte) bool {
 	case []byte:
 		n, err := ArrayCompare(pin.([]byte), offset, own.pinValue, 0, int16(length))
 		if err == nil && n == 0 && length == own.pinSize {
-			fmt.Println("found")
+			//	fmt.Println("found")
 			own.SetValidatedFlag(true)
 			own.ResetTriesRemaining()
 			return true

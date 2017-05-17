@@ -23,10 +23,10 @@ func ArrayfillNonAtomic(bArray []byte, bOff int16, bLen int16, bValue byte) (int
 	if bLen < 0 {
 		return 0, errors.New("Error in ArrayFillNonatomic")
 	}
-	bLen--
+
 	for ; bLen > 0; bLen-- {
-		bOff++
 		bArray[bOff] = bValue
+		bOff++
 	}
 	return bOff + bLen, nil
 }

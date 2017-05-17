@@ -1,5 +1,6 @@
 package test
 
+/*
 import (
 	"JCVM/jcre/api/javacard/framework"
 	"testing"
@@ -22,3 +23,4 @@ func TestAIDfunctions(t *testing.T) {
 		t.Error("Erreur: RIDs don't match")
 	}
 }
+*/

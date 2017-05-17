@@ -1,5 +1,6 @@
 package test
 
+/*
 import (
 	"JCVM/jcre/api/javacard/framework"
 	"testing"
@@ -17,3 +18,4 @@ func TestArrCopy(t *testing.T) {
 		t.Error("Problem Array copy")
 	}
 }
+*/
