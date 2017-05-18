@@ -4,8 +4,8 @@ workspace:
 
 pipeline:
   build:
-   image: golang:latest
+   image: golang:0.5
      commands:
        - go get 
        - go build
-       - go test github.com/yenden/JCVM/test/...
+       - go test -v github.com/yenden/JCVM/test/jcre_test.go
