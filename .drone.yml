@@ -1,5 +1,5 @@
 build:
-  image: golang:0.5
+  image: golang:1.8
     commands:
       - go get github.com/yenden/JCVM
       - go build
