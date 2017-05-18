@@ -1,4 +1,5 @@
-build:
-  image: golang:1.8
-    commands:
-      - go test -v test/jcreCredit_test.go
+pipeline:
+  build:
+    image: golang:1.8
+      commands:
+        - go test -v test/jcreCredit_test.go
