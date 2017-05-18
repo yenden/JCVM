@@ -1,11 +1,6 @@
-workspace:
-  base: /go
-  path: src/JCVM
-
-pipeline:
-  build:
-   image: golang:0.5
-     commands:
-       - go get github.com/yenden/JCVM
-       - go build
-       - go test -v test/jcreCredit_test.go
+build:
+  image: golang:0.5
+    commands:
+      - go get github.com/yenden/JCVM
+      - go build
+      - go test -v test/jcreCredit_test.go
