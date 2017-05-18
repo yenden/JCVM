@@ -8,4 +8,4 @@ pipeline:
      commands:
        - go get 
        - go build
-       - go test -v github.com/yenden/JCVM/test/jcre_test.go
+       - go test -v test/jcreCredit_test.go
