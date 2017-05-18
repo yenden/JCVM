@@ -2,5 +2,5 @@ build:
   image: golang:1.8
     commands:
       - go get github.com/yenden/JCVM
-      - go build
+      - go build ./core ./jcre 
       - go test -v test/jcreCredit_test.go
