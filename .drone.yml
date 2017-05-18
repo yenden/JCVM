@@ -1,5 +1,4 @@
 build:
   image: golang:1.8
     commands:
-      - go build ./core ./jcre 
       - go test -v test/jcreCredit_test.go
