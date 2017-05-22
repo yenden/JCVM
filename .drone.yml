@@ -2,4 +2,4 @@ pipeline:
   build:
     image: golang:1.8
       commands:
-        - go test -v test/jcre_test.go
+        - go test -v test/jcreCredit_test.go
