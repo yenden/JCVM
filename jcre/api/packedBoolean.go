@@ -1,9 +1,6 @@
 package api
 
-
-
-/**
- * The PackedBoolean manages booleans in volatile storage
+/*The PackedBoolean manages booleans in volatile storage
  * space efficiently.
  */
 type PackedBoolean struct {
@@ -12,25 +9,23 @@ type PackedBoolean struct {
 }
 
 /*
- * Constructor. Allocates an instance of PackedBoolean
+ * Allocates an instance of PackedBoolean
  */
 func initPackedBoolean(maxbytes byte) *PackedBoolean {
 	pbl := &PackedBoolean{}
-	pbl.container =   MakeTransientByteArray(int16(maxbytes),   ClearOnReset)
+	pbl.container = MakeTransientByteArray(int16(maxbytes), ClearOnReset)
 	pbl.nextID = 0
 	return pbl
 }
 
-/**
- * Allocates a new boolean and returns the associated int8 identifier.
+/*Allocate Allocates a new boolean and returns the associated int8 identifier.
  */
 func (pbl *PackedBoolean) Allocate() byte {
 	pbl.nextID++
 	return pbl.nextID
 }
 
-/*
- * Returns the state of identified boolean.
+/*Get Returns the state of identified boolean.
  */
 func (pbl *PackedBoolean) Get(identifier byte) bool {
 	return pbl.access(identifier, 0)
@@ -72,22 +67,19 @@ func (pbl *PackedBoolean) Set(identifier byte) {
 	pbl.access(identifier, 1)
 }
 
-/**
- * Resets the state of the identified boolean to false.
- *
- * @param boolean
- *            identifier
+/*Reset the state of the identified boolean to false.
  */
 func (pbl *PackedBoolean) Reset(identifier byte) {
 	pbl.access(identifier, -1)
 }
 
 const (
-	NumberSystemBools = 24
+	numberSystemBools = 24
 )
 
-func (pckB *PackedBoolean) GetPackedBoolean() {
-	if pckB == nil {
-		pckB = initPackedBoolean(byte((NumberSystemBools-1)>>3) + 1)
+/*GetPackedBoolean  get a packedboolean*/
+func (pbl *PackedBoolean) GetPackedBoolean() {
+	if pbl == nil {
+		pbl = initPackedBoolean(byte((numberSystemBools-1)>>3) + 1)
 	}
 }

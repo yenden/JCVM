@@ -6,10 +6,13 @@ import (
 )
 
 const (
+	//max size of apdubuffer stored in memory
+	//this is not the size of the received apdu
 	bufferSize = 37
 )
 
 var (
+	//SelectingAppLetFlag ...
 	SelectingAppLetFlag = false
 	//Lc is the data Length send in the apdu
 	Lc byte
@@ -21,11 +24,12 @@ var (
 	sendInProgressFlag = false
 )
 
+/*Apdu represent a received apdu */
 type Apdu struct {
 	Buffer []byte
 }
 
-//CompLete response to the previous adpu and send next
+//Complete response to the previous adpu and send next
 func (apdu *Apdu) Complete(status uint16) {
 	// Zero out APDU buffer
 	var result int
@@ -47,17 +51,23 @@ func (apdu *Apdu) Complete(status uint16) {
 	setParam(result)
 }
 
-//GetSeLectingAppLetFlag ...
+//GetSelectingAppLetFlag ...
 func GetSelectingAppLetFlag() bool {
 	return SelectingAppLetFlag
 }
+
+/*send sw for data remaining
+* It send the status and waits for getResponse apdu
+ */
 func send61xx(Length int16) int16 {
 	expLen := Length
 	for ok := true; ok; ok = (expLen > Length) { //do... whiLe
-		// Set SW1SW2 as 61xx.
-		nativeMethods.T0SetStatus(int(0x6100 + Length&0x00FF)) //61xx means data remaining
+		// Set SW1SW2 as 61xx (data remaining).
+		nativeMethods.T0SetStatus(int(0x6100 + Length&0x00FF))
 		newLen := nativeMethods.T0SndGetResponse()
-		if newLen > 0 && (newLen>>8 != 0xC0) { //0xC0xx <=>invalid getResponse apdu
+
+		//0xC0xx <=>invalid getResponse apdu
+		if newLen > 0 && (newLen>>8 != 0xC0) {
 			Le = byte(newLen)
 			expLen = int16(Le)
 		}
@@ -65,12 +75,14 @@ func send61xx(Length int16) int16 {
 	sendInProgressFlag = false
 	return expLen
 }
+
+/*SendBytes api framework function*/
 func SendBytes(arr []byte, offset, Length int16) {
 	for Length > 0 {
 		temp := Length
 		// Need to force GET RESPONSE for Case 4 & for partial blocks
 		if Length != int16(Lr) || Lr != Le || sendInProgressFlag {
-			temp = send61xx(Length) // resets
+			temp = send61xx(Length) //send data remainig status
 		}
 		nativeMethods.T0SendData(arr, offset, temp)
 		sendInProgressFlag = true
@@ -81,6 +93,8 @@ func SendBytes(arr []byte, offset, Length int16) {
 	}
 	sendInProgressFlag = false
 }
+
+/*SendBytesLong : api function to send a long buffer*/
 func SendBytesLong(Len, bOff int16, outData, apduBuff []byte) {
 	CheckArrayArgs(outData, bOff, Len)
 	sendLength := int16(len(apduBuff))
@@ -94,29 +108,46 @@ func SendBytesLong(Len, bOff int16, outData, apduBuff []byte) {
 		bOff += sendLength
 	}
 }
+
+/*SetOutgoingAndSend : api function to send outgoing bytes*/
 func SetOutgoingAndSend(arr []byte, Len, bOff int16) {
 	SetOutgoing()
 	SetOutgoingLength(Len)
 	SendBytes(arr, bOff, Len)
 }
+
+/*ReceiveBytes api framework function*/
 func ReceiveBytes(arr []byte, offset int16) int16 {
 	//Only APDUs case 3 and 4 are expected to call this method.
 	Length := nativeMethods.T0RcvData(arr, offset)
 	return Length
 }
+
+/*SetIncomingandreceive api framework function*/
 func SetIncomingandreceive(arr []byte) int16 {
 	Length := nativeMethods.T0RcvData(arr, int16(OffsetCData))
 	return Length
 }
+
+/*SetOutgoing api framework function*/
 func SetOutgoing() byte {
 	return Le
 }
+
+/*SetOutgoingLength api framework function*/
 func SetOutgoingLength(Len int16) {
 	Lr = byte(Len)
 }
+
+/*GetBuffer get the apdu buffer*/
 func GetBuffer(apduarray []byte) {
 	copy(apduarray[0:], nativeMethods.BufferRcv[:len(apduarray)])
 }
+
+/* setParam set apdu parameter(Lr,Lc and Le)
+* purpose: know if all data has been sent
+* or there is data remaining
+ */
 func setParam(n int) {
 	if n < 4 {
 		log.Fatal("Error: Apdu Len must be >4")

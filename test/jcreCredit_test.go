@@ -101,7 +101,7 @@ func TestJcreCreditCard(t *testing.T) {
 	}
 	if buffer[0] != 0x61 {
 		fmt.Println(buffer[:n])
-		t.Error("Not 61xx")
+		t.Error("Not 61xxvvv")
 	}
 	message = []byte{0x80, 0x04, 0x00, 0x00, 0x01} //send get response
 	_, err = client.Write(message)
@@ -286,5 +286,4 @@ func TestJcreCreditCard(t *testing.T) {
 	hex.Encode(dst, buffer[:n])
 	fmt.Printf("SW: %s\r\n ", dst)
 	server.Close()
-
 }

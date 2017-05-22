@@ -5,12 +5,16 @@ import (
 	"reflect"
 )
 
+/*AID structure represents an aid */
 type AID struct {
 	TheAID []byte
 }
 
 var bArray []byte
 
+/*InitAID  inits a AID struct with
+* a buffer contents
+ */
 func InitAID(bArray []byte, offset int16, length int16) *AID /*(*AID, error)*/ {
 	aid := &AID{}
 	err := CheckArrayArgs(bArray, offset, length)
@@ -33,6 +37,7 @@ func (aid *AID) getBytes(dest []byte, offset int16) byte {
 	return byte(len(aid.TheAID))
 }
 
+/*Equals checks two AID equality*/
 func (aid *AID) Equals(object interface{}) bool {
 	if object == nil {
 		return false
@@ -48,6 +53,8 @@ func (aid *AID) Equals(object interface{}) bool {
 		return false
 	}
 }
+
+/*Equals checks two AID equality*/
 func Equals(aid *AID, bArray []byte, offset int16, length int16) bool {
 	err := CheckArrayArgs(bArray, offset, int16(len(aid.TheAID)))
 	if err == nil {
@@ -62,6 +69,8 @@ func (aid *AID) partialEquals(bArray []byte, offset int16, length int16) bool {
 	}
 	return reflect.DeepEqual(bArray, aid.TheAID)
 }
+
+/*RidEquals checks two AID RID equality*/
 func (aid *AID) RidEquals(otherAID *AID) bool {
 	if otherAID == nil {
 		return false
@@ -73,6 +82,8 @@ func (aid *AID) RidEquals(otherAID *AID) bool {
 	return reflect.DeepEqual(bArray[:5], aid.TheAID[:5])
 
 }
+
+/*getPartialBytes  gets partial bytes of an AID*/
 func (aid *AID) getPartialBytes(aidOffset int16, dest []byte, oOffset int16, oLength int16) {
 	copyLen := oLength
 	if oLength == 0 {
