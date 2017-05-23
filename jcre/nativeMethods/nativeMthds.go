@@ -9,8 +9,8 @@ import (
 
 var (
 	sendRcvCycleStarted = false
-	//conn                *net.UDPConn
-	conn net.Conn
+	conn                *net.UDPConn
+	//	conn net.Conn
 	//data with status flag --if there is just data or data+SW
 	dataWithStatusFlag = false
 	//BufferRcv used to receive the incoming
@@ -28,12 +28,12 @@ var (
 	firsttime   = true
 )
 
-func protocolServer() net.Conn { //*net.UDPConn {
-	if firsttime {
-		fmt.Println("Card is up ")
-	}
-	firsttime = false
-	/*if conn == nil {
+func protocolServer() *net.UDPConn { //net.Conn {
+	/*	if firsttime {
+			fmt.Println("Card is up ")
+		}
+		firsttime = false*/
+	if conn == nil {
 		hostName := "localhost"
 		portNum := "6000"
 		service := hostName + ":" + portNum
@@ -47,51 +47,51 @@ func protocolServer() net.Conn { //*net.UDPConn {
 			log.Fatal(err)
 		}
 		fmt.Println("Card is up ")
-	}*/
+	}
 	return conn
 }
 
 //PowerUP launch the jcre and represent the first reset
-func PowerUP(connect net.Conn) {
-	//var addr *net.UDPAddr
+func PowerUP( /*connect net.Conn*/ ) {
+	var addr *net.UDPAddr
 	var err error
-	conn = connect
+	//	conn = connect
 	atr := []byte{59, 00, 17, 0, 00}
 	for BufferRcv[0] == 0x00 && BufferRcv[1] == 0x00 {
 		fmt.Println("wait for Powerup() for card activation")
-		_, err = protocolServer().Read(BufferRcv)
+		/*_, err = protocolServer().Read(BufferRcv)
+		if err != nil {
+			log.Fatal(err)
+		}*/
+
+		_, addr, err = protocolServer().ReadFromUDP(BufferRcv)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		/*	_, addr, err = protocolServer().ReadFromUDP(BufferRcv)
-			if err != nil {
-				log.Fatal(err)
-			}*/
 	}
-	_, err = protocolServer().Write(atr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	/*_, err = protocolServer().WriteToUDP(atr, addr)
+	/*_, err = protocolServer().Write(atr)
 	if err != nil {
 		log.Fatal(err)
 	}*/
+	_, err = protocolServer().WriteToUDP(atr, addr)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func receive() /**net.UDPAddr,*/ int {
+func receive() (*net.UDPAddr, int) {
 	apduRcvPtr = 5
 	dataWithStatusFlag = false
-	n, err := protocolServer().Read(BufferRcv)
+	/*	n, err := protocolServer().Read(BufferRcv)
+		if err != nil {
+			log.Fatal(err)
+		}*/
+	n, addr, err := protocolServer().ReadFromUDP(BufferRcv)
 	if err != nil {
 		log.Fatal(err)
 	}
-	/*n, addr, err := protocolServer().ReadFromUDP(BufferRcv)
-	if err != nil {
-		log.Fatal(err)
-	}*/
-	//return addr, n
-	return n
+	return addr, n
+	//	return n
 }
 func sendStatus(sw int) {
 	bs := make([]byte, 2)
@@ -103,14 +103,14 @@ func sendStatus(sw int) {
 	} else {
 		send = bs
 	}
-	_, err := protocolServer().Write(send)
-	if err != nil {
-		log.Fatal(err)
-	}
-	/*_, err := protocolServer().WriteToUDP(bs, Addr)
+	/*_, err := protocolServer().Write(send)
 	if err != nil {
 		log.Fatal(err)
 	}*/
+	_, err := protocolServer().WriteToUDP(send, Addr)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 //T0RcvCommand is to receive the command part of apdu
@@ -122,8 +122,8 @@ func T0RcvCommand(com []byte) (int, error) {
 	//receive apdu and copy its command in command buffer
 	sendRcvCycleStarted = true
 	var n int
-	n = receive()
-	//Addr, n = receive()
+	//n = receive()
+	Addr, n = receive()
 	copy(com[0:5], BufferRcv[0:5])
 	copy(command[0:], BufferRcv[0:5])
 	return n, nil
@@ -133,8 +133,8 @@ func T0RcvCommand(com []byte) (int, error) {
 func T0SndStatusRcvCommand(com []byte) int {
 	sendStatus(sw)
 	var n int
-	n = receive()
-	//Addr, n = receive()
+	//n = receive()
+	Addr, n = receive()
 	copy(com[0:5], BufferRcv[0:5])
 	copy(command[0:], BufferRcv[0:5])
 	return n
