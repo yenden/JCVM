@@ -11,7 +11,8 @@ var (
 	sendRcvCycleStarted = false
 	//conn                *net.UDPConn
 	conn net.Conn
-
+	//data with status flag --if there is just data or data+SW
+	dataWithStatusFlag = false
 	//BufferRcv used to receive the incoming
 	//and outgoing data
 	BufferRcv  = make([]byte, 128)
@@ -19,9 +20,12 @@ var (
 	command    = make([]byte, 5)
 	sw         int
 	//Addr client application address
-	Addr      *net.UDPAddr
-	apduPtr   = int16(5)
-	firsttime = true
+	Addr *net.UDPAddr
+	//A pointer to the received apdu buffer
+	apduRcvPtr = int16(5)
+	//A pointer to sending apdu buffer
+	ApduSendPtr = 0
+	firsttime   = true
 )
 
 func protocolServer() net.Conn { //*net.UDPConn {
@@ -76,7 +80,8 @@ func PowerUP(connect net.Conn) {
 }
 
 func receive() /**net.UDPAddr,*/ int {
-	apduPtr = 5
+	apduRcvPtr = 5
+	dataWithStatusFlag = false
 	n, err := protocolServer().Read(BufferRcv)
 	if err != nil {
 		log.Fatal(err)
@@ -92,7 +97,13 @@ func sendStatus(sw int) {
 	bs := make([]byte, 2)
 	bs[0] = byte(sw >> 8)
 	bs[1] = byte(sw)
-	_, err := protocolServer().Write(bs)
+	var send []byte
+	if dataWithStatusFlag {
+		send = append(bufferSend[0:ApduSendPtr], bs...)
+	} else {
+		send = bs
+	}
+	_, err := protocolServer().Write(send)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -136,8 +147,8 @@ func T0RcvData(apduBuffer []byte, offset int16) int16 {
 	if receiveLen > receiveSpace {
 		receiveLen = receiveSpace
 	}
-	copy(apduBuffer[offset:receiveLen+offset], BufferRcv[apduPtr:apduPtr+receiveLen])
-	apduPtr += receiveLen
+	copy(apduBuffer[offset:receiveLen+offset], BufferRcv[apduRcvPtr:apduRcvPtr+receiveLen])
+	apduRcvPtr += receiveLen
 	command[4] -= byte(receiveLen)
 	//LC = command[4]
 	return receiveLen
@@ -145,10 +156,15 @@ func T0RcvData(apduBuffer []byte, offset int16) int16 {
 
 //T0SendData copy to the outgoing apdu buffer
 func T0SendData(apduBuffer []byte, offset int16, length int16) {
-	_, err := protocolServer().Write(apduBuffer[offset:length])
+	if !dataWithStatusFlag {
+		dataWithStatusFlag = true
+	}
+	copy(bufferSend[ApduSendPtr:ApduSendPtr+int(length)], apduBuffer[offset:length])
+	ApduSendPtr += int(length)
+	/*_, err := protocolServer().Write(apduBuffer[offset:length])
 	if err != nil {
 		log.Fatal(err)
-	}
+	}*/
 
 	/*
 		_, err := protocolServer().WriteToUDP(apduBuffer[offset:length], Addr)

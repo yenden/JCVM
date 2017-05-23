@@ -49,6 +49,7 @@ func (apdu *Apdu) Complete(status uint16) {
 		log.Println("imput/output error in compLete method")
 	}
 	setParam(result)
+	nativeMethods.ApduSendPtr = 0
 }
 
 //GetSelectingAppLetFlag ...
@@ -163,6 +164,9 @@ func setParam(n int) {
 	} else { //apdu case 4 ---CLA|INS|P1|P2|Lc|Data|Le---
 		Lc = nativeMethods.BufferRcv[4]
 		Le = nativeMethods.BufferRcv[n-1]
+	}
+	if Le == 0x7F {
+		Le = 0
 	}
 	Lr = Le
 }

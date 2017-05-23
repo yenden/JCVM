@@ -112,19 +112,19 @@ func TestJcreCreditCard(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dst = make([]byte, hex.EncodedLen(len(buffer[:n])))
-	hex.Encode(dst, buffer[:n])
-	fmt.Printf("Solde: \t %s\t ", dst)
+	dst1 := make([]byte, hex.EncodedLen(len(buffer[:n-2])))
+	hex.Encode(dst1, buffer[:n-2])
+	fmt.Printf("Solde: \t %s\t ", dst1)
 	//status
-	n, err = client.Read(buffer)
+	/*n, err = client.Read(buffer)
 	if err != nil {
 		t.Error(err)
 	}
 	if buffer[0] != 0x90 && buffer[1] != 00 {
 		t.Error("Error consult solde")
-	}
-	dst = make([]byte, hex.EncodedLen(len(buffer[:n])))
-	hex.Encode(dst, buffer[:n])
+	}*/
+	dst = make([]byte, hex.EncodedLen(len(buffer[n-2:n])))
+	hex.Encode(dst, buffer[n-2:n])
 	fmt.Printf("SW: %s\r\n ", dst)
 	fmt.Println()
 	//do credit
@@ -210,19 +210,19 @@ func TestJcreCreditCard(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dst = make([]byte, hex.EncodedLen(len(buffer[:n])))
-	hex.Encode(dst, buffer[:n])
+	dst = make([]byte, hex.EncodedLen(len(buffer[:n-2])))
+	hex.Encode(dst, buffer[:n-2])
 	fmt.Printf("Solde: \t %s\t ", dst)
-	//status
+	/*//status
 	n, err = client.Read(buffer)
 	if err != nil {
 		t.Error(err)
 	}
 	if buffer[0] != 0x90 && buffer[1] != 00 {
 		t.Error("Error consult solde")
-	}
-	dst = make([]byte, hex.EncodedLen(len(buffer[:n])))
-	hex.Encode(dst, buffer[:n])
+	}*/
+	dst = make([]byte, hex.EncodedLen(len(buffer[n-2:n])))
+	hex.Encode(dst, buffer[n-2:n])
 	fmt.Printf("SW: %s\r\n ", dst)
 	fmt.Println()
 	// Crediter et lecture du porte monnaie apres code PIN
@@ -271,19 +271,19 @@ func TestJcreCreditCard(t *testing.T) {
 		t.Error(err)
 	}
 
-	dst = make([]byte, hex.EncodedLen(len(buffer[:n])))
-	hex.Encode(dst, buffer[:n])
+	dst = make([]byte, hex.EncodedLen(len(buffer[:n-2])))
+	hex.Encode(dst, buffer[:n-2])
 	fmt.Printf("Solde: \t %s\t ", dst)
-	//status
+	/*//status
 	n, err = client.Read(buffer)
 	if err != nil {
 		t.Error(err)
 	}
 	if buffer[0] != 0x90 && buffer[1] != 00 {
 		t.Error("Error consult solde")
-	}
-	dst = make([]byte, hex.EncodedLen(len(buffer[:n])))
-	hex.Encode(dst, buffer[:n])
+	}*/
+	dst = make([]byte, hex.EncodedLen(len(buffer[n-2:n])))
+	hex.Encode(dst, buffer[n-2:n])
 	fmt.Printf("SW: %s\r\n ", dst)
 	server.Close()
 }

@@ -4,6 +4,7 @@ import (
 	"JCVM/core"
 	"JCVM/jcre/api"
 	"JCVM/jcre/nativeMethods"
+	"reflect"
 )
 
 var (
@@ -36,12 +37,16 @@ func MainLoop() {
 		if processAndForward() { // Dispatcher handles the SELECT
 			// APDU
 			// dispatch to the currently selected applet
-			//var selectedApplet *core.CardApplet
-			selectedApplet, isAppPresent := core.AppletTable[currSelectedApplet]
-			if isAppPresent {
-				selectedApplet.Process(initProcess())
-				sw = core.GetStatus()
-			} else {
+			var selectedApplet *core.CardApplet
+			for i, j := range core.AppletTable {
+				if reflect.DeepEqual(i, currSelectedApplet) {
+					selectedApplet = j
+					selectedApplet.Process(initProcess())
+					sw = core.GetStatus()
+					break
+				}
+			}
+			if selectedApplet == nil {
 				sw = api.SwUnknown
 			}
 		} else { //install meth
