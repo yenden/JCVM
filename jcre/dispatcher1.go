@@ -4,6 +4,7 @@ import (
 	"JCVM/core"
 	"JCVM/jcre/api"
 	"JCVM/jcre/nativeMethods"
+	"fmt"
 	"reflect"
 )
 
@@ -78,6 +79,7 @@ func selectApdu(apdu *api.Apdu) {
 		aidBytes := apdu.Buffer[5 : 5+Len]
 		currSelectedApplet = api.InitAID(aidBytes, 0, int16(len(aidBytes)))
 	}
+	fmt.Println("Selecting aid:", currSelectedApplet)
 	setSelectingAppletFlag()
 }
 

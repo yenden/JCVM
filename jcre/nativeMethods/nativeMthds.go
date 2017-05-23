@@ -46,7 +46,7 @@ func protocolServer() *net.UDPConn { //net.Conn {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println("Card is up ")
+
 	}
 	return conn
 }
@@ -69,6 +69,8 @@ func PowerUP( /*connect net.Conn*/ ) {
 			log.Fatal(err)
 		}
 	}
+	fmt.Println("Receive PowerUp signal ")
+	fmt.Println("Sending ATR")
 	/*_, err = protocolServer().Write(atr)
 	if err != nil {
 		log.Fatal(err)
@@ -77,6 +79,7 @@ func PowerUP( /*connect net.Conn*/ ) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Card is up ")
 }
 
 func receive() (*net.UDPAddr, int) {

@@ -2,6 +2,8 @@ package api
 
 import (
 	"JCVM/jcre/nativeMethods"
+	"encoding/hex"
+	"fmt"
 	"log"
 )
 
@@ -37,13 +39,23 @@ func (apdu *Apdu) Complete(status uint16) {
 	ArrayfillNonAtomic(apdu.Buffer, 0, bufferSize, 0)
 	if status == 0 {
 		result, err = nativeMethods.T0RcvCommand(apdu.Buffer)
+
+		dst := make([]byte, hex.EncodedLen(len(nativeMethods.BufferRcv[0:result])))
+		hex.Encode(dst, nativeMethods.BufferRcv[0:result])
+
+		fmt.Printf("Received apdu: %s\r\n", dst)
 		if err != nil {
 			log.Println(err)
 		}
 
 	} else {
 		nativeMethods.T0SetStatus(int(status))
+		fmt.Printf("Sending Status word: %x\r\n", status)
 		result = nativeMethods.T0SndStatusRcvCommand(apdu.Buffer)
+
+		dst := make([]byte, hex.EncodedLen(len(nativeMethods.BufferRcv[0:result])))
+		hex.Encode(dst, nativeMethods.BufferRcv[0:result])
+		fmt.Printf("Received apdu: %s\r\n", dst)
 	}
 	if result == 0 {
 		log.Println("imput/output error in compLete method")

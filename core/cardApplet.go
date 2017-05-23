@@ -62,19 +62,19 @@ func (cl *CardApplet) cloneLibrary() *AbstractApplet {
 }
 
 func (cl *CardApplet) Install(vm *VM) {
-	//fmt.Println("Start installing...")
+	fmt.Println("Start installing...")
 	if cl.PApplet == nil {
 		fmt.Println("Not an applet!")
 		return
 	}
-	//	fmt.Printf("Install command from %d\r\n", int(cl.PApplet.applets[0].installMethodOffset))
+	//fmt.Printf("Install command from %d\r\n", int(cl.PApplet.applets[0].installMethodOffset))
 	offset := uint16(cl.PApplet.applets[0].installMethodOffset)
 	cl.AbsA.PMethod.executeByteCode(offset, cl.AbsA, vm, false, false)
-	//fmt.Println("Install finished!")
+	fmt.Println("Install finished!")
 }
 
 func (cl *CardApplet) Process(vm *VM) {
-	//fmt.Println("Start processing...")
+	fmt.Println("Start processing...")
 	if cl.PApplet == nil {
 		fmt.Println("Not an applet!")
 		return
@@ -96,5 +96,5 @@ func (cl *CardApplet) Process(vm *VM) {
 		}
 	}
 	cl.AbsA.PMethod.executeByteCode(processMethodOf, cl.AbsA, vm, false, true)
-	//	fmt.Println("Process finished!")
+	fmt.Println("Process finished!")
 }
