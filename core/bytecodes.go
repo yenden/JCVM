@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	ownerPinMap  = map[uint8]uint8{0: 0, 1: 4, 2: 3, 3: 1, 4: 5, 5: 6, 6: 8, 7: 2, 8: 7}
 	frameworkAID = []byte{0xa0, 0, 0, 0, 0x62, 1, 1}
 )
 
+/*constants to identify api packages methods*/
 const (
 	ownerpinClass         = 9
 	check                 = 1
@@ -75,7 +75,7 @@ func aaload(currF *Frame) {
 	arrayref := currF.pop()
 	switch value := heap[arrayref.(Reference)].(type) { // the reference point to an array
 	case *ArrayValue:
-		if value.componentType == TypeReference {
+		if value.componentType == typeReference {
 			c := value.array.([]Reference)[index.(int16)]
 			currF.push(c)
 		}
@@ -86,7 +86,7 @@ func baload(currF *Frame) {
 	arrayref := currF.pop()
 	switch value := heap[arrayref.(Reference)].(type) {
 	case *ArrayValue: // the reference point to an array
-		if value.componentType == TypeByte || value.componentType == TypeBoolean {
+		if value.componentType == typeByte || value.componentType == typeBoolean {
 			c := value.array.([]byte)[index.(int16)]
 			currF.push(int16(c))
 		}
@@ -98,7 +98,7 @@ func saload(currF *Frame) {
 	arrayref := currF.pop()
 	switch value := heap[arrayref.(Reference)].(type) {
 	case *ArrayValue: // the reference point to an array
-		if value.componentType == TypeShort {
+		if value.componentType == typeShort {
 			c := value.array.([]int16)[index.(int16)]
 			currF.push(c)
 		}
@@ -128,7 +128,7 @@ func aastore(currF *Frame) {
 	arrayref := currF.pop()
 	switch value := heap[arrayref.(Reference)].(type) {
 	case *ArrayValue: // the reference point to an array
-		if value.componentType == TypeReference { //an array of reference
+		if value.componentType == typeReference { //an array of reference
 			value.array.([]Reference)[index.(int16)] = refval.(Reference)
 		}
 
@@ -140,7 +140,7 @@ func bastore(currF *Frame) {
 	arrayref := currF.pop()
 	switch value := heap[arrayref.(Reference)].(type) {
 	case *ArrayValue: // the reference point to an array
-		if value.componentType == TypeByte || value.componentType == TypeBoolean { //an array of byte or boolean
+		if value.componentType == typeByte || value.componentType == typeBoolean { //an array of byte or boolean
 			value.array.([]byte)[index.(int16)] = uint8(refval.(int16))
 		}
 	}
@@ -152,7 +152,7 @@ func sastore(currF *Frame) {
 	arrayref := currF.pop()
 	switch value := heap[arrayref.(Reference)].(type) {
 	case *ArrayValue: // the reference point to an array
-		if value.componentType == TypeShort { //an array of byte or boolean
+		if value.componentType == typeShort { //an array of byte or boolean
 			value.array.([]int16)[index.(int16)] = refval.(int16)
 		}
 
@@ -470,7 +470,6 @@ func invokevirtual(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 			pCA.PMethod.executeByteCode(pcLInf.publicVirtualMethodTable[index2], pCA, vm, true, false)
 		}
 	}
-
 }
 func invokespecial(currF *Frame, index uint16, pCA *AbstractApplet, vm *VM) {
 	pCI := pCA.PConstPool.pConstantPool[index]
@@ -745,22 +744,22 @@ func newArray(currF *Frame, atype uint8) {
 	switch atype {
 	case 10:
 		//boolean
-		array.componentType = TypeBoolean
+		array.componentType = typeBoolean
 		array.length = uint16(count)
 		array.array = make([]uint8, count)
 	case 11:
 		//byte
-		array.componentType = TypeByte
+		array.componentType = typeByte
 		array.length = uint16(count)
 		array.array = make([]byte, count)
 	case 12:
 		//short
-		array.componentType = TypeShort
+		array.componentType = typeShort
 		array.length = uint16(count)
 		array.array = make([]int16, count)
 	case 13:
 		//int
-		array.componentType = TypeInt
+		array.componentType = typeInt
 		array.length = uint16(count)
 		array.array = make([]int32, count)
 	}

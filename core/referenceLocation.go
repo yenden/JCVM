@@ -1,5 +1,6 @@
 package core
 
+/*ReferenceLocationComponent of CAP file*/
 type ReferenceLocationComponent struct {
 	byteIndexCount        uint16
 	offsetsToByteIndices  []uint8

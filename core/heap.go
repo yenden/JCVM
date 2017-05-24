@@ -4,12 +4,13 @@ import "JCVM/jcre/api"
 
 type typeValue uint16
 
+/*Represent an array's contents type*/
 const (
-	TypeBoolean typeValue = 0x0001 + iota
-	TypeByte
-	TypeShort
-	TypeInt
-	TypeReference
+	typeBoolean typeValue = 0x0001 + iota
+	typeByte
+	typeShort
+	typeInt
+	typeReference
 )
 
 /*TypeVoid             = 0x0001
@@ -25,22 +26,28 @@ TypeArrayOfInt       = 0x000D
 TypeArrayOfReference = 0x000E*/
 
 var (
-	javaClassArray  [256]*JavaClass
-	jcCount         = -1
-	heap            = make(map[Reference]interface{})
+	javaClassArray [256]*JavaClass
+	//jcCount is Java Class count in the main heap
+	jcCount = -1
+	//heap represent the main memory heap
+	heap = make(map[Reference]interface{})
+	//InstanceRefHeap is a map between AID and memry reference in the main heap
 	InstanceRefHeap = make(map[*api.AID]Reference)
-	arrcount        = 511
-	interfcount     = 255
-	apduBuffLen     = 0
-	//heap           = make(map[int16]*ArrayValue)
-	//heapClass      = make(map[int16]*JavaClass)
+	//arrcount indexes arrays in the main heap
+	arrcount = 511
+	//interfcount indexes interfaces in the main heap
+	interfcount = 255
+	apduBuffLen = 0
 )
 
+/*ArrayValue represents an array in the heap*/
 type ArrayValue struct {
 	componentType typeValue
 	length        uint16
 	array         interface{} // []interface{}
 }
+
+/*JavaClass represents an instance class in the heap*/
 type JavaClass struct {
 	classref             uint16
 	superclassref        uint16
@@ -53,17 +60,19 @@ type instanceField struct {
 	value interface{}
 }
 
-//Apdu array for incoming and outgoing apdus
+//InitApduArr inits apdu array for incoming and outgoing apdus
 //It will be called once
 func InitApduArr() {
 	array := &ArrayValue{}
-	array.componentType = TypeByte
+	array.componentType = typeByte
 	array.length = uint16(37)
 	array.array = make([]byte, 37)
 	heap[Reference(6000)] = array
 }
 
+/*FillApduArr fills the apdu array in the heap with the receives apdu buffer*/
 func FillApduArr(apdu []byte, ref Reference) {
+	//Reference 6000 has been fixed for apdu array in the heap
 	arr := (heap[Reference(6000)]).(*ArrayValue)
 	for i := 0; i < len(apdu); i++ {
 		arr.array.([]byte)[i] = apdu[i]

@@ -13,9 +13,9 @@ var (
 	//	conn net.Conn
 	//data with status flag --if there is just data or data+SW
 	dataWithStatusFlag = false
-	//BufferRcv used to receive the incoming
-	//and outgoing data
-	BufferRcv  = make([]byte, 128)
+	//BufferRcv is used to receive the incoming
+	BufferRcv = make([]byte, 128)
+	//bufferSend is used to store outgoing data
 	bufferSend = make([]byte, 128)
 	command    = make([]byte, 5)
 	sw         int
@@ -101,6 +101,8 @@ func sendStatus(sw int) {
 	bs[0] = byte(sw >> 8)
 	bs[1] = byte(sw)
 	var send []byte
+
+	//if there is data to send with SW
 	if dataWithStatusFlag {
 		send = append(bufferSend[0:ApduSendPtr], bs...)
 	} else {

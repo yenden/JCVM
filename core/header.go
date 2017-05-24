@@ -8,6 +8,8 @@ type HeaderComponent struct {
 	PThisPackage *PackageInfo
 	pNameInfor   *PackageNameInfo
 }
+
+/*PackageNameInfo is package's name informations*/
 type PackageNameInfo struct {
 	nameLength uint8
 	name       []uint8

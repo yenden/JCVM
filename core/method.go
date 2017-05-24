@@ -1,5 +1,6 @@
 package core
 
+/*ExceptionHandlerInfo informations on exeption handling*/
 type ExceptionHandlerInfo struct {
 	startOffset    uint16
 	activeLength   uint16
@@ -18,6 +19,8 @@ type MethodInfo struct {
 	pMethodHeaderInfo *MethodHeaderInfo
 	bytecodes         []uint8
 }*/
+
+/*MethodComponent of CAP file*/
 type MethodComponent struct {
 	handlerCount       uint8
 	pExceptionHandlers []*ExceptionHandlerInfo
@@ -32,11 +35,12 @@ func isAbstract(flag uint8) bool {
 	return (flag & 0x40) == 0x40
 }
 
+//executeByteCode gets the informations of the current excecuting method and
+//call runStatic which excute the bytecode
 func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet, vm *VM, invokercond bool, processCond bool) {
 	iPosm2 := int(offset - 1)
 	flags := readU1(mComp.pMethodInfo, &iPosm2)
 	currFrame := vm.StackFrame[vm.FrameTop]
-	//var maxStack, nargs, maxLocals uint8
 	var nargs uint8
 	if isExtended(flags) {
 		readU1(mComp.pMethodInfo, &iPosm2)
@@ -49,7 +53,6 @@ func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet
 		nargs = readHighShift(bitField)
 		readLow(bitField)
 	}
-	//fmt.Println("max stack", maxStack, "maxlocal", maxLocals)
 	if !processCond {
 		currFrame.opStackTop = -1
 		currFrame.Localvariables = make([]interface{}, 200)
@@ -61,5 +64,5 @@ func (mComp *MethodComponent) executeByteCode(offset uint16, pCA *AbstractApplet
 			currFrame.Localvariables[i-1] = invokerframe.pop()
 		}
 	}
-	vm.runStatic(mComp.pMethodInfo, &iPosm2, pCA, nargs)
+	vm.runStatic(mComp.pMethodInfo, &iPosm2, pCA, nargs) //the main executing method
 }

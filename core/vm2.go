@@ -6,14 +6,25 @@ const (
 	maxFrame   = 256
 )
 
+/*ReturnAddress type*/
 type ReturnAddress int
+
+/*Reference type*/
 type Reference uint16
+
+/*NullType type*/
 type NullType int
+
+/*Frame represent an executing method*/
 type Frame struct {
 	Localvariables []interface{}
 	operandStack   []interface{}
 	opStackTop     int
 }
+
+/*VM : The main VM structure
+--- Vm is a set of Frames
+*/
 type VM struct {
 	StackFrame []*Frame //creer apres maxframe
 	FrameTop   int
@@ -25,9 +36,12 @@ var (
 	slookupswitchMap = make(map[int16]int16)
 )
 
+/*GetStatus helps the jcre to get the status modified by JCVM*/
 func GetStatus() uint16 {
 	return status
 }
+
+/*SetStatus is used when the VM modifies SW*/
 func SetStatus(st uint16) {
 	status = st
 }
@@ -44,6 +58,7 @@ func (frame *Frame) push(value interface{}) bool {
 
 }
 
+/*PushFrame pushes frame in the VM*/
 func (vm *VM) PushFrame(frame *Frame) bool {
 	if vm.FrameTop+1 == maxFrame {
 		return false

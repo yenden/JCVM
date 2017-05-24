@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+/*AbstractApplet is the ijc file without applet component*/
 type AbstractApplet struct {
 	PHeader      *HeaderComponent
 	PDir         *DirectoryComponent
@@ -17,6 +18,7 @@ type AbstractApplet struct {
 	PExport      *ExportComponent
 }
 
+//compare two libraries
 func (abs *AbstractApplet) isThisLibrary(pPI *PackageInfo) bool {
 	aidL := abs.PHeader.PThisPackage.AIDLength
 	if aidL == pPI.AIDLength {
@@ -30,6 +32,7 @@ func (abs *AbstractApplet) isThisLibrary(pPI *PackageInfo) bool {
 	return false
 }
 
+/*CardApplet represents the ijc file, the entire CAP file*/
 type CardApplet struct {
 	AbsA    *AbstractApplet
 	PApplet *AppletComponent
@@ -61,6 +64,7 @@ func (cl *CardApplet) cloneLibrary() *AbstractApplet {
 	return pcl
 }
 
+//Install is the main installation method
 func (cl *CardApplet) Install(vm *VM) {
 	fmt.Println("Start installing...")
 	if cl.PApplet == nil {
@@ -73,8 +77,9 @@ func (cl *CardApplet) Install(vm *VM) {
 	fmt.Println("Install finished!")
 }
 
+//Process is the main processing method
 func (cl *CardApplet) Process(vm *VM) {
-	fmt.Println("Start processing...")
+	fmt.Println("Start processing the apdu ...")
 	if cl.PApplet == nil {
 		fmt.Println("Not an applet!")
 		return
@@ -84,6 +89,8 @@ func (cl *CardApplet) Process(vm *VM) {
 	classref := instance.(*JavaClass).classref
 	count := cl.AbsA.PDescriptor.classCount
 	var processMethodOf uint16
+
+	//searching process method offset in method component
 	for i := 0; i < int(count); i++ {
 		if cl.AbsA.PDescriptor.classes[i].thisClassRef == classref {
 			class := cl.AbsA.PDescriptor.classes[i]
@@ -95,6 +102,7 @@ func (cl *CardApplet) Process(vm *VM) {
 			break
 		}
 	}
+	//execute process method
 	cl.AbsA.PMethod.executeByteCode(processMethodOf, cl.AbsA, vm, false, true)
 	fmt.Println("Process finished!")
 }

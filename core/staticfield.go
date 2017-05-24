@@ -4,11 +4,14 @@ var (
 	imageCounter int
 )
 
+/*ArrayInitInfo : informations on arrays that has been initialized in <clinit>*/
 type ArrayInitInfo struct {
 	typ     uint8
 	count   uint16
 	pValues []uint8
 }
+
+/*StaticFieldComponent of CAP file*/
 type StaticFieldComponent struct {
 	imageSize            uint16
 	referenceCount       uint16
@@ -20,6 +23,8 @@ type StaticFieldComponent struct {
 	pStaticFieldImage    []uint8
 }
 
+/*this builds the staticfield Image in an array
+ */
 func (sfc *StaticFieldComponent) buildStaticFieldImage() {
 	sfc.pStaticFieldImage = make([]uint8, sfc.imageSize)
 	//Build segment 1 and segment 2 data.

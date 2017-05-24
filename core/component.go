@@ -83,7 +83,7 @@ func IsPrivate(value uint8) bool {
 	return (value & AccPrivate) == AccPrivate
 }
 
-/* IsProtected  ...*/
+/*IsProtected  ...*/
 func IsProtected(value uint8) bool {
 	return (value & AccProtected) == AccProtected
 }

@@ -1,7 +1,7 @@
 package core
 
 /*
-u1<--> uint8
+u1<--> byte or uint8
 u2<--> uint16
 u3<--> uint32
 
@@ -10,6 +10,7 @@ s2<--> int16
 s4<--> int32
 */
 
+/*These functions are utilities to parse ijc file*/
 func readU1(dataBuffer []byte, iPos *int) uint8 {
 	temp := dataBuffer[*iPos]
 	(*iPos)++
