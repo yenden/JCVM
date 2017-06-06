@@ -308,6 +308,9 @@ func (vm *VM) runStatic(pByteCode []uint8, pPC *int, pCA *AbstractApplet, params
 		case 0x6B:
 			bValue := readS1(pByteCode, pPC)
 			ifScmpne(currentFrame, bValue, pPC)
+		case 0x6D:
+			bValue := readS1(pByteCode, pPC)
+			ifScmpge(currentFrame, bValue, pPC)
 		case 0x70:
 			bValue := readS1(pByteCode, pPC)
 			goTo(currentFrame, bValue, pPC)

@@ -839,6 +839,14 @@ func ifScmpeq(currF *Frame, branch int8, pPC *int) {
 		(*pPC) -= 2
 	}
 }
+func ifScmpge(currF *Frame, branch int8, pPC *int) {
+	value2 := currF.pop()
+	value1 := currF.pop()
+	if value1.(int16) >= value2.(int16) {
+		(*pPC) += int(branch)
+		(*pPC) -= 2
+	}
+}
 func putfield(currF *Frame, index uint8, pCA *AbstractApplet) {
 	svalue := currF.pop()
 	objref := currF.pop()
